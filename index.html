@@ -155,19 +155,25 @@ function renderTmdb(t) {
     }
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-    // 4. Бюджет, Сборы и Доп. Информация
+       // 4. Бюджет, Сборы и Доп. Информация
     let financeHtml = "";
     
-    // Бюджет
+    // Бюджет (сначала проверяем Кинопоиск, потом TMDB)
     let budgetText = "Нет данных";
-    if (t.budgetKP && t.budgetKP > 0) budgetText = "$" + Number(t.budgetKP).toLocaleString('ru-RU');
-    else if (t.budget && t.budget > 0) budgetText = "$" + Number(t.budget).toLocaleString('ru-RU');
+    let bKP = Number(t.budgetKP);
+    let bTMDB = Number(t.budget);
+
+    if (!isNaN(bKP) && bKP > 0) {
+        budgetText = "$" + bKP.toLocaleString('ru-RU');
+    } else if (!isNaN(bTMDB) && bTMDB > 0) {
+        budgetText = "$" + bTMDB.toLocaleString('ru-RU');
+    }
     financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
 
     // Сборы
-    if (t.feesUSA > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
-    if (t.feesRussia > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
-    if (t.feesWorld > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
+    if (Number(t.feesUSA) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
+    if (Number(t.feesRussia) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
+    if (Number(t.feesWorld) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
 
     // Премьеры и рейтинги
     if (t.premiereWorld) {
