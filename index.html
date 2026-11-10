@@ -70,16 +70,16 @@ const reqIndex = p.get("rowIndex") || "";
 let currentBot = "";
 
 // 🚀 1. БЫСТРАЯ ЗАГРУЗКА (показываем карточку через 0.5 сек)
-fetch(API + "?action=basic&type=" + reqType + "&rowIndex=" + reqIndex + "&userId=" + userId)
+fetch(API + "?action=basic&type=" + reqType + "&rowIndex=" + reqIndex + "&userId=" + userId + "&t=" + Date.now())
   .then(r => r.json())
   .then(d => {
       if (d.ok) {
           renderBasic(d);
-          // 🚀 2. ФОНОВАЯ ЗАГРУЗКА (подгружаем актеров и похожих втихую)
-          fetch(API + "?action=tmdb&type=" + reqType + "&rowIndex=" + reqIndex)
+          // 🚀 2. ФОНОВАЯ ЗАГРУЗКА (подгружаем данные из TMDB и Кинопоиска)
+          fetch(API + "?action=tmdb&type=" + reqType + "&rowIndex=" + reqIndex + "&t=" + Date.now())
             .then(r => r.json())
             .then(t => { if(t.ok) renderTmdb(t); })
-            .catch(e => console.log("TMDB error:", e));
+            .catch(e => console.log("TMDB/KP error:", e));
       } else {
           fail(d.error);
       }
@@ -132,9 +132,9 @@ function renderBasic(d) {
   };
 }
 
-// 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB (Плавно появляются)
+// 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
 function renderTmdb(t) {
-    // 1. Оригинальное название (если отличается от русского)
+    // 1. Оригинальное название
     if (t.originalTitle && t.originalTitle !== document.title) {
         $("tmdb-orig-title").innerHTML = '<div class="orig">' + esc(t.originalTitle) + "</div>";
     }
@@ -155,12 +155,37 @@ function renderTmdb(t) {
     }
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-    // 4. Бюджет (Выводим ВСЕГДА, даже если данных нет)
+    // 4. Бюджет, Сборы и Доп. Информация
+    let financeHtml = "";
+    
+    // Бюджет
     let budgetText = "Нет данных";
-    if (t.budget && t.budget > 0) {
-        budgetText = "$" + Number(t.budget).toLocaleString('ru-RU');
+    if (t.budgetKP && t.budgetKP > 0) budgetText = "$" + Number(t.budgetKP).toLocaleString('ru-RU');
+    else if (t.budget && t.budget > 0) budgetText = "$" + Number(t.budget).toLocaleString('ru-RU');
+    financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
+
+    // Сборы
+    if (t.feesUSA > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
+    if (t.feesRussia > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
+    if (t.feesWorld > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
+
+    // Премьеры и рейтинги
+    if (t.premiereWorld) {
+        let pDate = new Date(t.premiereWorld);
+        if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🌍 Премьера в мире:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
     }
-    $("tmdb-budget-info").innerHTML = '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
+    if (t.premiereRussia) {
+        let pDate = new Date(t.premiereRussia);
+        if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🇷🇺 Премьера в РФ:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
+    }
+    if (t.ageRating) {
+        financeHtml += '<div class="card"><b>🔞 Возраст:</b><span>' + esc(t.ageRating) + "</span></div>";
+    }
+    if (t.ratingMpaa) {
+        financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
+    }
+
+    $("tmdb-budget-info").innerHTML = financeHtml;
 
     // 5. Похожие фильмы (карусель)
     if (t.similar && t.similar.length > 0) {
