@@ -110,7 +110,7 @@ function renderBasic(d) {
     '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
     '<div id="tmdb-cast-info"></div>' +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
-    '<div id="tmdb-budget-info"></div>' +
+    '<div id="tmdb-budget-info"></div>' + // 👈 ВОТ ЭТОТ КОНТЕЙНЕР БЫЛ ПОТЕРЯН
     (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '?rel=0" allowfullscreen></iframe></div>' : "") +
     '<div id="tmdb-similar-container"></div>' +
     "</div>";
@@ -118,7 +118,6 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
   
-    // 🚀 ОБРАБОТЧИК КНОПКИ "В СПИСОК"
   $("watch").onclick = async () => {
       const btn = $("watch");
       btn.disabled = true; 
@@ -151,17 +150,13 @@ function renderBasic(d) {
 
 // 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
 function renderTmdb(t) {
-    // 1. Оригинальное название
     if (t.originalTitle && t.originalTitle !== document.title) {
         $("tmdb-orig-title").innerHTML = '<div class="orig">' + esc(t.originalTitle) + "</div>";
     }
-    
-    // 2. Слоган фильма
     if (t.tagline) {
         $("tmdb-tagline").innerHTML = '<div class="tag">«' + esc(t.tagline) + "»</div>";
     }
 
-    // 3. Режиссер и актеры
     const isMovie = reqType === "movie";
     let infoHtml = "";
     if (t.director) {
@@ -172,10 +167,8 @@ function renderTmdb(t) {
     }
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-       // 4. Бюджет, Сборы и Доп. Информация
+    // 🚀 БЮДЖЕТ И СБОРЫ
     let financeHtml = "";
-    
-    // Бюджет (сначала проверяем Кинопоиск, потом TMDB)
     let budgetText = "Нет данных";
     let bKP = Number(t.budgetKP);
     let bTMDB = Number(t.budget);
@@ -187,12 +180,10 @@ function renderTmdb(t) {
     }
     financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
 
-    // Сборы
     if (Number(t.feesUSA) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
     if (Number(t.feesRussia) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
     if (Number(t.feesWorld) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
 
-    // Премьеры и рейтинги
     if (t.premiereWorld) {
         let pDate = new Date(t.premiereWorld);
         if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🌍 Премьера в мире:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
@@ -207,16 +198,15 @@ function renderTmdb(t) {
     if (t.ratingMpaa) {
         financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
     }
-
+    
     $("tmdb-budget-info").innerHTML = financeHtml;
 
-    // 5. Похожие фильмы (карусель)
+    // 🚀 ПОХОЖИЕ
     if (t.similar && t.similar.length > 0) {
         let simHtml = "<h2>🎬 Похожие</h2><div class=\"sim\">" + t.similar.map(s =>
             '<button data-id="' + esc(s.id) + '" data-k="' + esc(s.kind) + '"><img src="' + esc(s.poster) + '" alt=""><span>' + esc(s.title) + "</span><small>" + esc(s.year) + "</small></button>").join("") + "</div>";
         $("tmdb-similar-container").innerHTML = simHtml;
         
-        // Привязываем кнопки к фильмам в карусели
         document.querySelectorAll(".sim button").forEach(b => {
             b.onclick = () => openTg("https://t.me/" + currentBot + "?start=" + encodeURIComponent("sim_" + b.dataset.id + "_" + b.dataset.k));
         });
