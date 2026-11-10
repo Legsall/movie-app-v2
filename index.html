@@ -135,11 +135,9 @@ function renderBasic(d) {
       btn.innerHTML = "⏳...";
       
       try {
-          // 🚀 Добавляем &t=" + Date.now(), чтобы браузер не кэшировал запрос
           const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now()).then(r => r.json());
           
           if (res.ok) {
-              // 🚀 Строго смотрим, что ответил сервер
               if (res.status === "added") {
                   btn.innerHTML = "🗑 Убрать из списка";
                   tg.showAlert("✅ Добавлено в список «Посмотреть позже»");
