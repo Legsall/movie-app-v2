@@ -63,7 +63,18 @@ const openTg = url => tg.openTelegramLink ? tg.openTelegramLink(url) : (location
 
 $("close").onclick = () => tg.close();
 
-const userId = tg.initDataUnsafe?.user?.id || "";
+let userId = tg.initDataUnsafe?.user?.id;
+if (!userId && tg.initData) {
+    try {
+        const urlParams = new URLSearchParams(tg.initData);
+        const userStr = urlParams.get('user');
+        if (userStr) {
+            const userObj = JSON.parse(userStr);
+            userId = userObj.id;
+        }
+    } catch (e) {}
+}
+userId = userId || "";
 const p = new URLSearchParams(location.search);
 const reqType = p.get("type") || "movie";
 const reqIndex = p.get("rowIndex") || "";
@@ -129,37 +140,43 @@ function renderBasic(d) {
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ИСПРАВЛЕНО) =====
-   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" =====
+    // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
-  const setWatchBtn = () => { $("watch").innerHTML = inWatch ? "🗑 Убрать из списка" : "📌 В список"; };
-  const safeAlert = m => { try { tg.showAlert(String(m || "—").slice(0, 200)); } catch (e) {} };
+  const btnW = $("watch");
+  const label = () => inWatch ? "🗑 Убрать из списка" : "📌 В список";
+  const showMsg = (m, ms) => { btnW.innerHTML = m; setTimeout(() => { btnW.innerHTML = label(); }, ms || 2500); };
 
-  $("watch").onclick = async () => {
-      if (busy) return;
+  btnW.onclick = async () => {
+      if (busy) { showMsg("⏳ Подождите…", 800); return; }
       busy = true;
-      $("watch").style.opacity = ".6";
+      btnW.innerHTML = "⏳ Секунду…";
       const want = !inWatch;
+
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 20000);   // не висим вечно
+
       try {
-          const txt = await fetch(API + "?action=set_watch&state=" + (want ? 1 : 0) +
-              "&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now())
-              .then(r => r.text());
+          const resp = await fetch(API + "?action=set_watch&state=" + (want ? 1 : 0) +
+              "&rowIndex=" + encodeURIComponent(d.rowIndex) + "&type=" + encodeURIComponent(d.type) +
+              "&userId=" + encodeURIComponent(userId) + "&t=" + Date.now(), { signal: ctrl.signal });
+          const txt = await resp.text();
           let res = null;
           try { res = JSON.parse(txt); } catch (e) {}
 
           if (res && res.ok) {
               inWatch = !!res.inWatchlist;
-              setWatchBtn();
+              btnW.innerHTML = label();
               try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
           } else if (res) {
-              safeAlert("Ошибка: " + (res.error || "неизвестно"));
+              showMsg("❌ " + String(res.error || "ошибка").slice(0, 40), 4000);
           } else {
-              safeAlert("Сервер ответил не так: " + txt.replace(/<[^>]*>/g, " ").trim());
+              showMsg("❌ Сервер: старая версия", 4000);   // ответ не JSON
           }
       } catch (e) {
-          safeAlert("Ошибка сети: " + e.message);
+          showMsg(e.name === "AbortError" ? "❌ Нет ответа 20с" : "❌ Нет связи", 4000);
       }
-      $("watch").style.opacity = "1";
+      clearTimeout(timer);
       busy = false;
   };
 }
