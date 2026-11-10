@@ -139,7 +139,7 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
-   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (УПРОЩЕННАЯ И НАДЕЖНАЯ) =====
+  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ИСПРАВЛЕНО) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
@@ -150,32 +150,44 @@ function renderBasic(d) {
       busy = true;
       btnW.innerHTML = "⏳ Секунду…";
 
-      try {
-          // 🚀 Делаем прямой запрос к серверу
-          const url = API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now();
-          console.log("Отправляю запрос:", url); // Для отладки (F12)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
 
-          const resp = await fetch(url);
-          const txt = await resp.text();
-          console.log("Ответ сервера:", txt); // Для отладки (F12)
+      try {
+          const url = API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now();
           
+          // 🚀 Отключаем кэш и добавляем таймаут
+          const resp = await fetch(url, { 
+              signal: controller.signal,
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+          });
+          
+          clearTimeout(timeoutId);
+          const txt = await resp.text();
           const res = JSON.parse(txt);
 
           if (res && res.ok) {
               inWatch = (res.status === "added");
-              btnW.innerHTML = label(); // Меняем текст на "Убрать" или "В список"
-              try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
+              btnW.innerHTML = label();
+              if (tg) tg.HapticFeedback.notificationOccurred("success");
           } else {
               btnW.innerHTML = label();
-              tg.showAlert("❌ Ошибка: " + (res.error || "неизвестно"));
+              if (tg) tg.showAlert("❌ Ошибка: " + (res.error || "неизвестно"));
           }
       } catch (e) {
+          clearTimeout(timeoutId);
           console.error("Ошибка fetch:", e);
           btnW.innerHTML = label();
-          tg.showAlert("❌ Ошибка сети. Проверьте интернет.");
+          
+          if (e.name === 'AbortError') {
+              if (tg) tg.showAlert("❌ Сервер не отвечает (10 сек). Попробуйте еще раз.");
+          } else {
+              if (tg) tg.showAlert("❌ Ошибка сети. Проверьте интернет.");
+          }
       }
       
-      busy = false;
+      busy = false; // Сбрасываем блокировку в любом случае
   };
 }
 
