@@ -139,7 +139,7 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
-  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (100% РАБОТАЕТ НА ПК И ТЕЛЕФОНЕ) =====
+   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ФИНАЛЬНАЯ ВЕРСИЯ) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
@@ -149,17 +149,17 @@ function renderBasic(d) {
       if (busy) return;
       busy = true;
       
-      // 1. Мгновенно меняем интерфейс (чтобы кнопка не висела)
+      // 1. Мгновенно меняем интерфейс
       const prevState = inWatch;
       inWatch = !inWatch;
       btnW.innerHTML = label();
       if (tg) tg.HapticFeedback.notificationOccurred("success");
 
-      // 2. Отправляем запрос на сервер
-      const url = API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + (userId || "0") + "&t=" + Date.now();
+      // 2. 🚀 ВАЖНО: Используем add_watch или remove_watch (а не toggle!)
+      const action = inWatch ? "add_watch" : "remove_watch";
+      const url = API + "?action=" + action + "&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + (userId || "0") + "&t=" + Date.now();
       
       try {
-          // Пытаемся отправить обычным способом
           const resp = await fetch(url, { cache: 'no-store' });
           const txt = await resp.text();
           
@@ -173,16 +173,15 @@ function renderBasic(d) {
               }
           }
       } catch (e) {
-          // 🚀 ЕСЛИ БРАУЗЕР ЗАБЛОКИРОВАЛ ЗАПРОС (CORS)
-          // Отправляем его в обход через картинку! Сервер его получит и обновит таблицу.
+          // 🚀 Обход блокировки CORS (для работы на ПК)
           console.log("Fetch заблокирован, отправляем через Image:", e);
           const img = new Image();
           img.src = url;
       }
       
-      busy = false;
+      // Даем серверу 1.5 секунды на обновление
+      setTimeout(() => { busy = false; }, 1500);
   };
-}
 
 // 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
 function renderTmdb(t) {
