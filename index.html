@@ -111,7 +111,7 @@ function renderBasic(d) {
     '<div id="tmdb-cast-info"></div>' +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
     '<div id="tmdb-budget-info"></div>' +
-    (yt ? '<div class="trailer" style="position:relative;"><iframe src="https://www.youtube.com/embed/' + yt + '" allowfullscreen></iframe><a href="https://www.youtube.com/watch?v=' + yt + '" target="_blank" style="position:absolute;bottom:10px;right:10px;background:#ff0000;color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;z-index:10;">▶ Смотреть на YouTube</a></div>' : "") +
+    (yt ? ` <div class="trailer" style="display:flex; align-items:center; justify-content:center; position:relative; background:url(https://img.youtube.com/vi/${yt}/hqdefault.jpg) center/cover; cursor:pointer;" onclick="Telegram.WebApp.openLink('https://www.youtube.com/watch?v=${yt}')">     <div style="position:absolute; inset:0; background:rgba(0,0,0,0.5); border-radius:20px;"></div>     <div style="position:relative; z-index:10; text-align:center;">         <div style="width:60px; height:60px; background:#ff0000; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 4px 15px rgba(255,0,0,0.5);">             <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>         </div>         <span style="color:white; font-weight:bold; font-size:14px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Смотреть трейлер</span>     </div> </div> ` : "") +
     '<div id="tmdb-similar-container"></div>' +
     "</div>";
 
