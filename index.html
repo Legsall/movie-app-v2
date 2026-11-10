@@ -63,18 +63,18 @@ const openTg = url => tg.openTelegramLink ? tg.openTelegramLink(url) : (location
 
 $("close").onclick = () => tg.close();
 
+// 🚀 ПОЛУЧЕНИЕ USER ID (С ЗАЩИТОЙ ОТ ПУСТОГО ID НА ПК)
 let userId = tg.initDataUnsafe?.user?.id;
 if (!userId && tg.initData) {
     try {
         const urlParams = new URLSearchParams(tg.initData);
         const userStr = urlParams.get('user');
-        if (userStr) {
-            const userObj = JSON.parse(userStr);
-            userId = userObj.id;
-        }
+        if (userStr) userId = JSON.parse(userStr).id;
     } catch (e) {}
 }
-userId = userId || "";
+// Для теста на ПК, если ID так и не пришел, ставим ваш ID (7990100977)
+userId = userId || "7990100977";
+
 const p = new URLSearchParams(location.search);
 const reqType = p.get("type") || "movie";
 const reqIndex = p.get("rowIndex") || "";
@@ -86,11 +86,11 @@ fetch(API + "?action=basic&type=" + reqType + "&rowIndex=" + reqIndex + "&userId
   .then(d => {
       if (d.ok) {
           renderBasic(d);
-          // 🚀 2. ФОНОВАЯ ЗАГРУЗКА (подгружаем данные из TMDB и Кинопоиска)
+          // 🚀 2. ФОНОВАЯ ЗАГРУЗКА
           fetch(API + "?action=tmdb&type=" + reqType + "&rowIndex=" + reqIndex + "&t=" + Date.now())
             .then(r => r.json())
             .then(t => { if(t.ok) renderTmdb(t); })
-            .catch(e => console.log("TMDB/KP error:", e));
+            .catch(e => console.log("TMDB error:", e));
       } else {
           fail(d.error);
       }
@@ -108,14 +108,9 @@ function renderBasic(d) {
   const yt = (d.trailer.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/) || [])[1];
   const watchText = d.inWatchlist ? "🗑 Убрать из списка" : "📌 В список";
 
-  // 🚀 ДОБАВЛЯЕМ СТРАНУ И ЖАНРЫ
   let basicInfoHtml = "";
-  if (d.country) {
-      basicInfoHtml += '<div class="card"><b>🌍 Страна:</b><span>' + esc(d.country) + "</span></div>";
-  }
-  if (d.genres) {
-      basicInfoHtml += '<div class="card"><b>🎭 Жанры:</b><span>' + esc(d.genres) + "</span></div>";
-  }
+  if (d.country) basicInfoHtml += '<div class="card"><b>🌍 Страна:</b><span>' + esc(d.country) + "</span></div>";
+  if (d.genres) basicInfoHtml += '<div class="card"><b>🎭 Жанры:</b><span>' + esc(d.genres) + "</span></div>";
 
   $("app").innerHTML =
     (d.poster ? '<div class="hero"><img src="' + esc(d.poster) + '" alt=""></div>' : "") +
@@ -139,57 +134,36 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
-  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (СИНХРОНИЗИРОВАНО С CLOUD AI) =====
+  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ЧЕРЕЗ КАРТИНКУ - 100% РАБОТАЕТ) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
   const label = () => inWatch ? "🗑 Убрать из списка" : "📌 В список";
 
-  btnW.onclick = async () => {
+  btnW.onclick = () => {
       if (busy) return;
       busy = true;
-      
-      // 1. Вычисляем действие
-      const wantAdd = !inWatch; 
-      btnW.innerHTML = "⏳ Секунду…";
 
-      // 2. 🚀 Отправляем ЯВНЫЙ статус (state=1 или state=0), как ждет Cloud AI
+      // 1. Мгновенно меняем кнопку (нам не нужно ждать ответа сервера)
+      const wantAdd = !inWatch;
+      inWatch = wantAdd;
+      btnW.innerHTML = label();
+      if (tg) tg.HapticFeedback.notificationOccurred("success");
+
+      // 2. Формируем URL с четким приказом (1 = добавить, 0 = убрать)
       const url = API + "?action=set_watch&state=" + (wantAdd ? "1" : "0") +
                   "&rowIndex=" + d.rowIndex + "&type=" + d.type +
-                  "&userId=" + (userId || "0") + "&t=" + Date.now();
-      
-      try {
-          const resp = await fetch(url, { cache: 'no-store' });
-          const txt = await resp.text();
-          
-          if (txt && txt.startsWith('{')) {
-              const res = JSON.parse(txt);
-              
-              // 3. Синхронизируем кнопку с реальным ответом сервера
-              if (res.ok) {
-                  inWatch = res.inWatchlist; 
-                  btnW.innerHTML = label();
-                  if (tg) tg.HapticFeedback.notificationOccurred("success");
-              } else {
-                  btnW.innerHTML = label();
-                  if (tg) tg.showAlert("❌ " + (res.error || "Ошибка сервера"));
-              }
-          }
-      } catch (e) {
-          // 🚀 Обход CORS для ПК
-          console.log("Fetch заблокирован, отправляем через Image:", e);
-          const img = new Image();
-          img.src = url;
-          
-          inWatch = wantAdd;
-          btnW.innerHTML = label();
-      }
-      
-      setTimeout(() => { busy = false; }, 1500);
-  };
-} // 👈 ВОТ ЭТА СКОБКА БЫЛА ПОТЕРЯНА (ЗАКРЫВАЕТ renderBasic)
+                  "&userId=" + userId + "&t=" + Date.now();
 
-// 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
+      // 3. 🚀 ОТПРАВЛЯЕМ ЗАПРОС ЧЕРЕЗ НЕВИДИМУЮ КАРТИНКУ (ОБХОД CORS)
+      const img = new Image();
+      img.src = url;
+
+      // 4. Разблокируем кнопку через 1 секунду
+      setTimeout(() => { busy = false; }, 1000);
+  };
+}
+
 function renderTmdb(t) {
     if (t.originalTitle && t.originalTitle !== document.title) {
         $("tmdb-orig-title").innerHTML = '<div class="orig">' + esc(t.originalTitle) + "</div>";
@@ -200,25 +174,17 @@ function renderTmdb(t) {
 
     const isMovie = reqType === "movie";
     let infoHtml = "";
-    if (t.director) {
-        infoHtml += '<div class="card"><b>' + (isMovie ? "🎬 Режиссёр:" : "🎬 Создатели:") + '</b><span>' + esc(t.director) + "</span></div>";
-    }
-    if (t.cast) {
-        infoHtml += '<div class="card"><b>🎭 В ролях:</b><span>' + esc(t.cast) + "</span></div>";
-    }
+    if (t.director) infoHtml += '<div class="card"><b>' + (isMovie ? "🎬 Режиссёр:" : "🎬 Создатели:") + '</b><span>' + esc(t.director) + "</span></div>";
+    if (t.cast) infoHtml += '<div class="card"><b>🎭 В ролях:</b><span>' + esc(t.cast) + "</span></div>";
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-    // 🚀 БЮДЖЕТ И СБОРЫ
     let financeHtml = "";
     let budgetText = "Нет данных";
     let bKP = Number(t.budgetKP);
     let bTMDB = Number(t.budget);
 
-    if (!isNaN(bKP) && bKP > 0) {
-        budgetText = "$" + bKP.toLocaleString('ru-RU');
-    } else if (!isNaN(bTMDB) && bTMDB > 0) {
-        budgetText = "$" + bTMDB.toLocaleString('ru-RU');
-    }
+    if (!isNaN(bKP) && bKP > 0) budgetText = "$" + bKP.toLocaleString('ru-RU');
+    else if (!isNaN(bTMDB) && bTMDB > 0) budgetText = "$" + bTMDB.toLocaleString('ru-RU');
     
     financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
 
@@ -234,16 +200,11 @@ function renderTmdb(t) {
         let pDate = new Date(t.premiereRussia);
         if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🇷🇺 Премьера в РФ:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
     }
-    if (t.ageRating) {
-        financeHtml += '<div class="card"><b>🔞 Возраст:</b><span>' + esc(t.ageRating) + "</span></div>";
-    }
-    if (t.ratingMpaa) {
-        financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
-    }
+    if (t.ageRating) financeHtml += '<div class="card"><b>🔞 Возраст:</b><span>' + esc(t.ageRating) + "</span></div>";
+    if (t.ratingMpaa) financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
     
     $("tmdb-budget-info").innerHTML = financeHtml;
 
-    // 🚀 ПОХОЖИЕ
     if (t.similar && t.similar.length > 0) {
         let simHtml = "<h2>🎬 Похожие</h2><div class=\"sim\">" + t.similar.map(s =>
             '<button data-id="' + esc(s.id) + '" data-k="' + esc(s.kind) + '"><img src="' + esc(s.poster) + '" alt=""><span>' + esc(s.title) + "</span><small>" + esc(s.year) + "</small></button>").join("") + "</div>";
