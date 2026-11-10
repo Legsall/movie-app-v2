@@ -99,12 +99,12 @@ function render(d) {
       '<button data-id="' + esc(s.id) + '" data-k="' + esc(s.kind) + '"><img src="' + esc(s.poster) + '" alt=""><span>' + esc(s.title) + "</span><small>" + esc(s.year) + "</small></button>").join("") + "</div>" : "") +
     "</div>";
 
-  const shareLink = "https://t.me/" + bot + "?start=" + (isMovie ? "open_movie_" : "open_") + d.rowIndex;
+  const shareLink = "https://t.me/" + bot + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
-  $("watch").onclick = () => openTg("https://t.me/" + bot + "?start=watch_" + d.rowIndex + "_" + d.type);
+  $("watch").onclick = () => openTg("https://t.me/" + bot + "?start=" + encodeURIComponent("watch_" + d.rowIndex + "_" + d.type));
   document.querySelectorAll(".sim button").forEach(b => {
-    b.onclick = () => openTg("https://t.me/" + bot + "?start=sim_" + b.dataset.id + "_" + b.dataset.k);
-  });
+    b.onclick = () => openTg("https://t.me/" + bot + "?start=" + encodeURIComponent("sim_" + b.dataset.id + "_" + b.dataset.k));
+});
 }
 </script>
 </body>
