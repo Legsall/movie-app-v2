@@ -117,7 +117,7 @@ function renderBasic(d) {
     (d.ratingTMDB ? '<span class="badge b-tmdb">★ TMDB: ' + esc(d.ratingTMDB) + "</span>" : "") +
     (d.ratingKP ? '<span class="badge b-kp">★ КП: ' + esc(d.ratingKP) + "</span>" : "") + "</div>" +
     '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
-    basicInfoHtml + // 👈 ВСТАВЛЯЕМ СТРАНУ И ЖАНРЫ СЮДА
+    basicInfoHtml + 
     '<div id="tmdb-cast-info"></div>' +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
     '<div id="tmdb-budget-info"></div>' +
@@ -177,14 +177,13 @@ function renderTmdb(t) {
     }
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-    // 🚀 БЮДЖЕТ И СБОРЫ (ИСПРАВЛЕНО)
+    // 🚀 БЮДЖЕТ И СБОРЫ (ИСПРАВЛЕНО! ВСЕ ДОБАВЛЯЕТСЯ В ОДНУ ПЕРЕМЕННУЮ)
     let financeHtml = "";
     let budgetText = "Нет данных";
     let bKP = Number(t.budgetKP);
     let bTMDB = Number(t.budget);
 
-    // Выводим в консоль для проверки, приходят ли данные с сервера
-    console.log("Данные бюджета от сервера:", t.budget, t.budgetKP);
+    console.log("Данные бюджета от сервера:", t.budget, t.budgetKP); // Проверка в консоли
 
     if (!isNaN(bKP) && bKP > 0) {
         budgetText = "$" + bKP.toLocaleString('ru-RU');
@@ -192,13 +191,15 @@ function renderTmdb(t) {
         budgetText = "$" + bTMDB.toLocaleString('ru-RU');
     }
     
-    // 🚀 ВАЖНО: Сразу добавляем бюджет в общую переменную financeHtml
+    // Бюджет
     financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
 
+    // Сборы
     if (Number(t.feesUSA) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
     if (Number(t.feesRussia) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
     if (Number(t.feesWorld) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
 
+    // Премьеры и рейтинги
     if (t.premiereWorld) {
         let pDate = new Date(t.premiereWorld);
         if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🌍 Премьера в мире:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
@@ -214,7 +215,7 @@ function renderTmdb(t) {
         financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
     }
     
-    // 🚀 Выводим все данные за один раз
+    // Выводим ВСЕ финансовые данные за один раз
     $("tmdb-budget-info").innerHTML = financeHtml;
 
     // 🚀 ПОХОЖИЕ
