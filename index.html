@@ -139,47 +139,45 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
-    // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ПОЛНОСТЬЮ ИСПРАВЛЕНО) =====
+   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (УПРОЩЕННАЯ И НАДЕЖНАЯ) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
   const label = () => inWatch ? "🗑 Убрать из списка" : "📌 В список";
-  const showMsg = (m, ms) => { btnW.innerHTML = m; setTimeout(() => { btnW.innerHTML = label(); }, ms || 2500); };
 
   btnW.onclick = async () => {
-      if (busy) { showMsg("⏳ Подождите…", 800); return; }
+      if (busy) return;
       busy = true;
       btnW.innerHTML = "⏳ Секунду…";
 
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 20000);   // не висим вечно
-
       try {
-          // 🚀 ИСПРАВЛЕНИЕ: Отправляем action=toggle_watch (как ждет сервер)
-          const resp = await fetch(API + "?action=toggle_watch" +
-              "&rowIndex=" + encodeURIComponent(d.rowIndex) + "&type=" + encodeURIComponent(d.type) +
-              "&userId=" + encodeURIComponent(userId) + "&t=" + Date.now(), { signal: ctrl.signal });
-          
+          // 🚀 Делаем прямой запрос к серверу
+          const url = API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now();
+          console.log("Отправляю запрос:", url); // Для отладки (F12)
+
+          const resp = await fetch(url);
           const txt = await resp.text();
-          let res = null;
-          try { res = JSON.parse(txt); } catch (e) {}
+          console.log("Ответ сервера:", txt); // Для отладки (F12)
+          
+          const res = JSON.parse(txt);
 
           if (res && res.ok) {
-              // 🚀 ИСПРАВЛЕНИЕ: Сервер возвращает status ("added" или "removed")
-              inWatch = (res.status === "added"); 
-              btnW.innerHTML = label();
+              inWatch = (res.status === "added");
+              btnW.innerHTML = label(); // Меняем текст на "Убрать" или "В список"
               try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
-          } else if (res) {
-              showMsg("❌ " + String(res.error || "ошибка").slice(0, 40), 4000);
           } else {
-              showMsg("❌ Сервер: старая версия", 4000);   // ответ не JSON
+              btnW.innerHTML = label();
+              tg.showAlert("❌ Ошибка: " + (res.error || "неизвестно"));
           }
       } catch (e) {
-          showMsg(e.name === "AbortError" ? "❌ Нет ответа 20с" : "❌ Нет связи", 4000);
+          console.error("Ошибка fetch:", e);
+          btnW.innerHTML = label();
+          tg.showAlert("❌ Ошибка сети. Проверьте интернет.");
       }
-      clearTimeout(timer);
+      
       busy = false;
   };
+}
 
 // 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
 function renderTmdb(t) {
