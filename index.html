@@ -177,17 +177,22 @@ function renderTmdb(t) {
     }
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-    // 🚀 БЮДЖЕТ И СБОРЫ
+    // 🚀 БЮДЖЕТ И СБОРЫ (ИСПРАВЛЕНО)
     let financeHtml = "";
     let budgetText = "Нет данных";
     let bKP = Number(t.budgetKP);
     let bTMDB = Number(t.budget);
+
+    // Выводим в консоль для проверки, приходят ли данные с сервера
+    console.log("Данные бюджета от сервера:", t.budget, t.budgetKP);
 
     if (!isNaN(bKP) && bKP > 0) {
         budgetText = "$" + bKP.toLocaleString('ru-RU');
     } else if (!isNaN(bTMDB) && bTMDB > 0) {
         budgetText = "$" + bTMDB.toLocaleString('ru-RU');
     }
+    
+    // 🚀 ВАЖНО: Сразу добавляем бюджет в общую переменную financeHtml
     financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
 
     if (Number(t.feesUSA) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
@@ -209,6 +214,7 @@ function renderTmdb(t) {
         financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
     }
     
+    // 🚀 Выводим все данные за один раз
     $("tmdb-budget-info").innerHTML = financeHtml;
 
     // 🚀 ПОХОЖИЕ
