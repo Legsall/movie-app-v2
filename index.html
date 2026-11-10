@@ -127,34 +127,33 @@ function renderBasic(d) {
 
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
-  
-   $("watch").onclick = async () => {
-      const btn = $("watch");
-      btn.disabled = true; 
-      const originalText = btn.innerHTML;
-      btn.innerHTML = "⏳...";
-      
+
+  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ИСПРАВЛЕНО) =====
+  let inWatch = !!d.inWatchlist;
+  let busy = false;
+  const setWatchBtn = () => { $("watch").innerHTML = inWatch ? "🗑 Убрать из списка" : "📌 В список"; };
+
+  $("watch").onclick = async () => {
+      if (busy) return;            // защита от двойного нажатия во время запроса
+      busy = true;
+      $("watch").style.opacity = ".6";
+      const want = !inWatch;       // какое состояние хотим получить
       try {
-          const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now()).then(r => r.json());
-          
+          const res = await fetch(API + "?action=set_watch&state=" + (want ? 1 : 0) +
+              "&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now())
+              .then(r => r.json());
           if (res.ok) {
-              if (res.status === "added") {
-                  btn.innerHTML = "🗑 Убрать из списка";
-                  tg.showAlert("✅ Добавлено в список «Посмотреть позже»");
-              } else if (res.status === "removed") {
-                  btn.innerHTML = "📌 В список";
-                  tg.showAlert("🗑 Удалено из списка «Посмотреть позже»");
-              }
+              inWatch = !!res.inWatchlist;   // берём реальное состояние от сервера
+              setWatchBtn();
+              try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
           } else {
-              btn.innerHTML = originalText;
               tg.showAlert("❌ Ошибка списка: " + (res.error || "неизвестно"));
           }
       } catch (e) {
-          btn.innerHTML = originalText;
           tg.showAlert("❌ Ошибка сети: " + e.message);
       }
-      
-      btn.disabled = false;
+      $("watch").style.opacity = "1";
+      busy = false;
   };
 }
 
@@ -177,13 +176,11 @@ function renderTmdb(t) {
     }
     $("tmdb-cast-info").innerHTML = infoHtml;
 
-    // 🚀 БЮДЖЕТ И СБОРЫ (ИСПРАВЛЕНО! ВСЕ ДОБАВЛЯЕТСЯ В ОДНУ ПЕРЕМЕННУЮ)
+    // 🚀 БЮДЖЕТ И СБОРЫ
     let financeHtml = "";
     let budgetText = "Нет данных";
     let bKP = Number(t.budgetKP);
     let bTMDB = Number(t.budget);
-
-    console.log("Данные бюджета от сервера:", t.budget, t.budgetKP); // Проверка в консоли
 
     if (!isNaN(bKP) && bKP > 0) {
         budgetText = "$" + bKP.toLocaleString('ru-RU');
@@ -215,7 +212,6 @@ function renderTmdb(t) {
         financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
     }
     
-    // Выводим ВСЕ финансовые данные за один раз
     $("tmdb-budget-info").innerHTML = financeHtml;
 
     // 🚀 ПОХОЖИЕ
