@@ -97,6 +97,15 @@ function renderBasic(d) {
   const yt = (d.trailer.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/) || [])[1];
   const watchText = d.inWatchlist ? "🗑 Убрать из списка" : "📌 В список";
 
+  // 🚀 ДОБАВЛЯЕМ СТРАНУ И ЖАНРЫ
+  let basicInfoHtml = "";
+  if (d.country) {
+      basicInfoHtml += '<div class="card"><b>🌍 Страна:</b><span>' + esc(d.country) + "</span></div>";
+  }
+  if (d.genres) {
+      basicInfoHtml += '<div class="card"><b>🎭 Жанры:</b><span>' + esc(d.genres) + "</span></div>";
+  }
+
   $("app").innerHTML =
     (d.poster ? '<div class="hero"><img src="' + esc(d.poster) + '" alt=""></div>' : "") +
     '<div class="container">' +
@@ -108,9 +117,10 @@ function renderBasic(d) {
     (d.ratingTMDB ? '<span class="badge b-tmdb">★ TMDB: ' + esc(d.ratingTMDB) + "</span>" : "") +
     (d.ratingKP ? '<span class="badge b-kp">★ КП: ' + esc(d.ratingKP) + "</span>" : "") + "</div>" +
     '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
+    basicInfoHtml + // 👈 ВСТАВЛЯЕМ СТРАНУ И ЖАНРЫ СЮДА
     '<div id="tmdb-cast-info"></div>' +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
-    '<div id="tmdb-budget-info"></div>' + // 👈 ВОТ ЭТОТ КОНТЕЙНЕР БЫЛ ПОТЕРЯН
+    '<div id="tmdb-budget-info"></div>' +
     (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '?rel=0" allowfullscreen></iframe></div>' : "") +
     '<div id="tmdb-similar-container"></div>' +
     "</div>";
