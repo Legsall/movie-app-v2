@@ -111,7 +111,7 @@ function renderBasic(d) {
     '<div id="tmdb-cast-info"></div>' +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
     '<div id="tmdb-budget-info"></div>' +
-    (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '" allowfullscreen></iframe></div>' : "") +
+    (yt ? '<div class="trailer" style="position:relative;"><iframe src="https://www.youtube.com/embed/' + yt + '" allowfullscreen></iframe><a href="https://www.youtube.com/watch?v=' + yt + '" target="_blank" style="position:absolute;bottom:10px;right:10px;background:#ff0000;color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:12px;z-index:10;">▶ Смотреть на YouTube</a></div>' : "") +
     '<div id="tmdb-similar-container"></div>' +
     "</div>";
 
