@@ -50,8 +50,7 @@ h2{font-size:18px;font-weight:800;margin:0 0 12px}
 <div class="bar"><button class="close" id="close">Закрыть</button></div>
 
 <script>
-// ⚠️ Вставьте сюда адрес вашего веб-приложения Apps Script (заканчивается на /exec)
-const API = "https://script.google.com/macros/s/AKfycbxtv9XVKA4dl0Jn0tgRalkRwouCgt0gu_9hhqGY4wc2IwL1DSlYl3KV5UnqKl8M6FpqAg/exec";
+const API = "https://script.google.com/macros/s/ВАШ_НОВЫЙ_АДРЕС_APPS_SCRIPT/exec"; // Сюда вставьте вашу ссылку
 
 const tg = Telegram.WebApp;
 tg.ready();
@@ -64,8 +63,12 @@ const openTg = url => tg.openTelegramLink ? tg.openTelegramLink(url) : (location
 
 $("close").onclick = () => tg.close();
 
+// 🚀 Получаем ID пользователя из Telegram
+const userId = tg.initDataUnsafe?.user?.id || "";
 const p = new URLSearchParams(location.search);
-fetch(API + "?type=" + encodeURIComponent(p.get("type") || "movie") + "&rowIndex=" + encodeURIComponent(p.get("rowIndex") || ""))
+
+// Передаем userId на сервер
+fetch(API + "?type=" + encodeURIComponent(p.get("type") || "movie") + "&rowIndex=" + encodeURIComponent(p.get("rowIndex") || "") + "&userId=" + userId)
   .then(r => r.json())
   .then(d => d.ok ? render(d) : fail(d.error))
   .catch(() => fail());
@@ -81,6 +84,9 @@ function render(d) {
   const info = [[isMovie ? "🎬 Режиссёр:" : "🎬 Создатели:", d.director], ["🎭 В ролях:", d.cast], ["🌍 Страна:", d.country], ["🎭 Жанр:", d.genres]]
     .filter(x => x[1]).map(x => '<div class="card"><b>' + x[0] + "</b><span>" + esc(x[1]) + "</span></div>").join("");
 
+  // 🚀 Определяем текст кнопки списка в зависимости от статуса
+  const watchText = d.inWatchlist ? "🗑 Убрать из списка" : "📌 В список";
+
   $("app").innerHTML =
     (d.poster ? '<div class="hero"><img src="' + esc(d.poster) + '" alt=""></div>' : "") +
     '<div class="container">' +
@@ -91,7 +97,7 @@ function render(d) {
     (d.year ? '<span class="badge">📅 ' + esc(d.year) + "</span>" : "") +
     (d.ratingTMDB ? '<span class="badge b-tmdb">★ TMDB: ' + esc(d.ratingTMDB) + "</span>" : "") +
     (d.ratingKP ? '<span class="badge b-kp">★ КП: ' + esc(d.ratingKP) + "</span>" : "") + "</div>" +
-    '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">📌 В список</button></div>' +
+    '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
     info +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
     (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '" allowfullscreen></iframe></div>' : "") +
@@ -101,10 +107,36 @@ function render(d) {
 
   const shareLink = "https://t.me/" + bot + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
-  $("watch").onclick = () => openTg("https://t.me/" + bot + "?start=" + encodeURIComponent("watch_" + d.rowIndex + "_" + d.type));
+  
+  // 🚀 НОВЫЙ ОБРАБОТЧИК КНОПКИ "В СПИСОК"
+  $("watch").onclick = async () => {
+      const btn = $("watch");
+      btn.disabled = true; // Блокируем кнопку, чтобы не нажимали дважды
+      
+      try {
+          const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId).then(r => r.json());
+          
+          if (res.ok) {
+              if (res.status === "added") {
+                  btn.innerHTML = "🗑 Убрать из списка";
+                  tg.showAlert("✅ Добавлено в список «Посмотреть позже»"); // Нативное всплывающее окно
+              } else {
+                  btn.innerHTML = "📌 В список";
+                  tg.showAlert("🗑 Удалено из списка «Посмотреть позже»");
+              }
+          } else {
+              tg.showAlert("❌ Ошибка при обновлении списка");
+          }
+      } catch (e) {
+          tg.showAlert("❌ Ошибка соединения");
+      }
+      
+      btn.disabled = false;
+  };
+
   document.querySelectorAll(".sim button").forEach(b => {
     b.onclick = () => openTg("https://t.me/" + bot + "?start=" + encodeURIComponent("sim_" + b.dataset.id + "_" + b.dataset.k));
-});
+  });
 }
 </script>
 </body>
