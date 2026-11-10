@@ -128,20 +128,22 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
   
-  $("watch").onclick = async () => {
+   $("watch").onclick = async () => {
       const btn = $("watch");
       btn.disabled = true; 
       const originalText = btn.innerHTML;
       btn.innerHTML = "⏳...";
       
       try {
+          // 🚀 Добавляем &t=" + Date.now(), чтобы браузер не кэшировал запрос
           const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now()).then(r => r.json());
           
           if (res.ok) {
+              // 🚀 Строго смотрим, что ответил сервер
               if (res.status === "added") {
                   btn.innerHTML = "🗑 Убрать из списка";
                   tg.showAlert("✅ Добавлено в список «Посмотреть позже»");
-              } else {
+              } else if (res.status === "removed") {
                   btn.innerHTML = "📌 В список";
                   tg.showAlert("🗑 Удалено из списка «Посмотреть позже»");
               }
