@@ -129,29 +129,35 @@ function renderBasic(d) {
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ИСПРАВЛЕНО) =====
+   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const setWatchBtn = () => { $("watch").innerHTML = inWatch ? "🗑 Убрать из списка" : "📌 В список"; };
+  const safeAlert = m => { try { tg.showAlert(String(m || "—").slice(0, 200)); } catch (e) {} };
 
   $("watch").onclick = async () => {
-      if (busy) return;            // защита от двойного нажатия во время запроса
+      if (busy) return;
       busy = true;
       $("watch").style.opacity = ".6";
-      const want = !inWatch;       // какое состояние хотим получить
+      const want = !inWatch;
       try {
-          const res = await fetch(API + "?action=set_watch&state=" + (want ? 1 : 0) +
+          const txt = await fetch(API + "?action=set_watch&state=" + (want ? 1 : 0) +
               "&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now())
-              .then(r => r.json());
-          if (res.ok) {
-              tg.showAlert(JSON.stringify(res));   // ВРЕМЕННО, для проверки
-inWatch = !!res.inWatchlist;  // берём реальное состояние от сервера
+              .then(r => r.text());
+          let res = null;
+          try { res = JSON.parse(txt); } catch (e) {}
+
+          if (res && res.ok) {
+              inWatch = !!res.inWatchlist;
               setWatchBtn();
               try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
+          } else if (res) {
+              safeAlert("Ошибка: " + (res.error || "неизвестно"));
           } else {
-              tg.showAlert("❌ Ошибка списка: " + (res.error || "неизвестно"));
+              safeAlert("Сервер ответил не так: " + txt.replace(/<[^>]*>/g, " ").trim());
           }
       } catch (e) {
-          tg.showAlert("❌ Ошибка сети: " + e.message);
+          safeAlert("Ошибка сети: " + e.message);
       }
       $("watch").style.opacity = "1";
       busy = false;
