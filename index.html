@@ -101,6 +101,7 @@ function render(d) {
     '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
     info +
     (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
+    (d.budget && d.budget > 0 ? '<div class="card"><b>💰 Бюджет:</b><span>$' + Number(d.budget).toLocaleString('ru-RU') + "</span></div>" : "") +
     (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '" allowfullscreen></iframe></div>' : "") +
     (d.similar.length ? "<h2>🎬 Похожие</h2><div class=\"sim\">" + d.similar.map(s =>
       '<button data-id="' + esc(s.id) + '" data-k="' + esc(s.kind) + '"><img src="' + esc(s.poster) + '" alt=""><span>' + esc(s.title) + "</span><small>" + esc(s.year) + "</small></button>").join("") + "</div>" : "") +
