@@ -50,7 +50,8 @@ h2{font-size:18px;font-weight:800;margin:0 0 12px}
 <div class="bar"><button class="close" id="close">Закрыть</button></div>
 
 <script>
-const API = "https://script.google.com/macros/s/ВАШ_НОВЫЙ_АДРЕС_APPS_SCRIPT/exec"; // Сюда вставьте вашу ссылку
+// 🚀 ВСТАВЛЕН ВАШ НОВЫЙ URL СЮДА
+const API = "https://script.google.com/macros/s/AKfycbx_lOo_ZblD870QKlBK2rI_bhr-REWavDL_txy6XToOCoC66Opbv7p0mJ33G1i_wiY95w/exec"; 
 
 const tg = Telegram.WebApp;
 tg.ready();
@@ -71,7 +72,7 @@ const p = new URLSearchParams(location.search);
 fetch(API + "?type=" + encodeURIComponent(p.get("type") || "movie") + "&rowIndex=" + encodeURIComponent(p.get("rowIndex") || "") + "&userId=" + userId)
   .then(r => r.json())
   .then(d => d.ok ? render(d) : fail(d.error))
-  .catch(() => fail());
+  .catch((err) => fail("Ошибка соединения: " + err.message)); // 🚀 Теперь показывает реальную ошибку
 
 function fail(m) {
   $("app").innerHTML = '<div class="msg">😔 ' + esc(m || "Не удалось загрузить данные") + "</div>";
@@ -108,10 +109,10 @@ function render(d) {
   const shareLink = "https://t.me/" + bot + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
   
-  // 🚀 НОВЫЙ ОБРАБОТЧИК КНОПКИ "В СПИСОК"
+  // 🚀 ОБРАБОТЧИК КНОПКИ "В СПИСОК"
   $("watch").onclick = async () => {
       const btn = $("watch");
-      btn.disabled = true; // Блокируем кнопку, чтобы не нажимали дважды
+      btn.disabled = true; 
       
       try {
           const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId).then(r => r.json());
@@ -119,16 +120,16 @@ function render(d) {
           if (res.ok) {
               if (res.status === "added") {
                   btn.innerHTML = "🗑 Убрать из списка";
-                  tg.showAlert("✅ Добавлено в список «Посмотреть позже»"); // Нативное всплывающее окно
+                  tg.showAlert("✅ Добавлено в список «Посмотреть позже»");
               } else {
                   btn.innerHTML = "📌 В список";
                   tg.showAlert("🗑 Удалено из списка «Посмотреть позже»");
               }
           } else {
-              tg.showAlert("❌ Ошибка при обновлении списка");
+              tg.showAlert("❌ Ошибка при обновлении списка: " + (res.error || "неизвестно"));
           }
       } catch (e) {
-          tg.showAlert("❌ Ошибка соединения");
+          tg.showAlert("❌ Ошибка соединения: " + e.message);
       }
       
       btn.disabled = false;
