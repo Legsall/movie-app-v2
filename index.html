@@ -118,16 +118,33 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
   
+    // 🚀 ОБРАБОТЧИК КНОПКИ "В СПИСОК"
   $("watch").onclick = async () => {
       const btn = $("watch");
       btn.disabled = true; 
+      const originalText = btn.innerHTML;
+      btn.innerHTML = "⏳...";
+      
       try {
-          const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId).then(r => r.json());
+          const res = await fetch(API + "?action=toggle_watch&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + userId + "&t=" + Date.now()).then(r => r.json());
+          
           if (res.ok) {
-              if (res.status === "added") { btn.innerHTML = "🗑 Убрать из списка"; tg.showAlert("✅ Добавлено в список"); }
-              else { btn.innerHTML = "📌 В список"; tg.showAlert("🗑 Удалено из списка"); }
-          } else { tg.showAlert("❌ Ошибка списка"); }
-      } catch (e) { tg.showAlert("❌ Ошибка сети"); }
+              if (res.status === "added") {
+                  btn.innerHTML = "🗑 Убрать из списка";
+                  tg.showAlert("✅ Добавлено в список «Посмотреть позже»");
+              } else {
+                  btn.innerHTML = "📌 В список";
+                  tg.showAlert("🗑 Удалено из списка «Посмотреть позже»");
+              }
+          } else {
+              btn.innerHTML = originalText;
+              tg.showAlert("❌ Ошибка списка: " + (res.error || "неизвестно"));
+          }
+      } catch (e) {
+          btn.innerHTML = originalText;
+          tg.showAlert("❌ Ошибка сети: " + e.message);
+      }
+      
       btn.disabled = false;
   };
 }
