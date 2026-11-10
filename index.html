@@ -139,8 +139,7 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
-  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ИСПРАВЛЕНО) =====
-    // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" =====
+    // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ПОЛНОСТЬЮ ИСПРАВЛЕНО) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
@@ -151,21 +150,23 @@ function renderBasic(d) {
       if (busy) { showMsg("⏳ Подождите…", 800); return; }
       busy = true;
       btnW.innerHTML = "⏳ Секунду…";
-      const want = !inWatch;
 
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 20000);   // не висим вечно
 
       try {
-          const resp = await fetch(API + "?action=set_watch&state=" + (want ? 1 : 0) +
+          // 🚀 ИСПРАВЛЕНИЕ: Отправляем action=toggle_watch (как ждет сервер)
+          const resp = await fetch(API + "?action=toggle_watch" +
               "&rowIndex=" + encodeURIComponent(d.rowIndex) + "&type=" + encodeURIComponent(d.type) +
               "&userId=" + encodeURIComponent(userId) + "&t=" + Date.now(), { signal: ctrl.signal });
+          
           const txt = await resp.text();
           let res = null;
           try { res = JSON.parse(txt); } catch (e) {}
 
           if (res && res.ok) {
-              inWatch = !!res.inWatchlist;
+              // 🚀 ИСПРАВЛЕНИЕ: Сервер возвращает status ("added" или "removed")
+              inWatch = (res.status === "added"); 
               btnW.innerHTML = label();
               try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
           } else if (res) {
@@ -179,7 +180,6 @@ function renderBasic(d) {
       clearTimeout(timer);
       busy = false;
   };
-}
 
 // 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
 function renderTmdb(t) {
