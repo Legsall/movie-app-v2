@@ -139,7 +139,7 @@ function renderBasic(d) {
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
-   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ФИНАЛЬНАЯ ВЕРСИЯ) =====
+  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (СИНХРОНИЗИРОВАНО С CLOUD AI) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
@@ -149,15 +149,14 @@ function renderBasic(d) {
       if (busy) return;
       busy = true;
       
-      // 1. Мгновенно меняем интерфейс
-      const prevState = inWatch;
-      inWatch = !inWatch;
-      btnW.innerHTML = label();
-      if (tg) tg.HapticFeedback.notificationOccurred("success");
+      // 1. Вычисляем действие
+      const wantAdd = !inWatch; 
+      btnW.innerHTML = "⏳ Секунду…";
 
-      // 2. 🚀 ВАЖНО: Используем add_watch или remove_watch (а не toggle!)
-      const action = inWatch ? "add_watch" : "remove_watch";
-      const url = API + "?action=" + action + "&rowIndex=" + d.rowIndex + "&type=" + d.type + "&userId=" + (userId || "0") + "&t=" + Date.now();
+      // 2. 🚀 Отправляем ЯВНЫЙ статус (state=1 или state=0), как ждет Cloud AI
+      const url = API + "?action=set_watch&state=" + (wantAdd ? "1" : "0") +
+                  "&rowIndex=" + d.rowIndex + "&type=" + d.type +
+                  "&userId=" + (userId || "0") + "&t=" + Date.now();
       
       try {
           const resp = await fetch(url, { cache: 'no-store' });
@@ -165,23 +164,30 @@ function renderBasic(d) {
           
           if (txt && txt.startsWith('{')) {
               const res = JSON.parse(txt);
-              // Если сервер вернул ошибку, откатываем кнопку назад
-              if (!res.ok) {
-                  inWatch = prevState;
+              
+              // 3. Синхронизируем кнопку с реальным ответом сервера
+              if (res.ok) {
+                  inWatch = res.inWatchlist; 
+                  btnW.innerHTML = label();
+                  if (tg) tg.HapticFeedback.notificationOccurred("success");
+              } else {
                   btnW.innerHTML = label();
                   if (tg) tg.showAlert("❌ " + (res.error || "Ошибка сервера"));
               }
           }
       } catch (e) {
-          // 🚀 Обход блокировки CORS (для работы на ПК)
+          // 🚀 Обход CORS для ПК
           console.log("Fetch заблокирован, отправляем через Image:", e);
           const img = new Image();
           img.src = url;
+          
+          inWatch = wantAdd;
+          btnW.innerHTML = label();
       }
       
-      // Даем серверу 1.5 секунды на обновление
       setTimeout(() => { busy = false; }, 1500);
   };
+} // 👈 ВОТ ЭТА СКОБКА БЫЛА ПОТЕРЯНА (ЗАКРЫВАЕТ renderBasic)
 
 // 🚀 ВСТАВКА ДАННЫХ ИЗ TMDB И КИНОПОИСКА (Плавно появляются)
 function renderTmdb(t) {
@@ -214,15 +220,12 @@ function renderTmdb(t) {
         budgetText = "$" + bTMDB.toLocaleString('ru-RU');
     }
     
-    // Бюджет
     financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
 
-    // Сборы
     if (Number(t.feesUSA) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
     if (Number(t.feesRussia) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
     if (Number(t.feesWorld) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
 
-    // Премьеры и рейтинги
     if (t.premiereWorld) {
         let pDate = new Date(t.premiereWorld);
         if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🌍 Премьера в мире:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
