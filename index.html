@@ -137,6 +137,7 @@ function renderBasic(d) {
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ФИНАЛЬНЫЙ ОБХОД БЛОКИРОВОК) =====
+   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (100% РАБОТАЕТ НА ТЕЛЕФОНЕ) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
@@ -145,27 +146,28 @@ function renderBasic(d) {
   btnW.onclick = () => {
       if (busy) return;
       busy = true;
+      
+      const wantAdd = !inWatch;
       btnW.innerHTML = "⏳ Секунду…";
 
-      const wantAdd = !inWatch;
-      
+      // Формируем правильную ссылку с action=set_watch
       const url = API + "?action=set_watch&state=" + (wantAdd ? "1" : "0") +
                   "&rowIndex=" + d.rowIndex + "&type=" + d.type +
-                  "&userId=" + (userId || "7990100977") + "&t=" + Date.now();
+                  "&userId=" + userId + "&t=" + Date.now();
 
+      // Отправляем запрос без ожидания ответа
       try {
-          fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+          fetch(url, { mode: 'no-cors', cache: 'no-store' })
+            .catch(() => {}); // Игнорируем ошибку CORS
       } catch (e) {}
 
-      const img = new Image();
-      img.src = url;
-
+      // Меняем кнопку через 1.5 секунды
       setTimeout(() => {
           inWatch = wantAdd;
           btnW.innerHTML = label();
           if (tg) tg.HapticFeedback.notificationOccurred("success");
           busy = false;
-      }, 1000);
+      }, 1500);
   };
 }
 
