@@ -137,45 +137,6 @@ function renderBasic(d) {
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ЧЕРЕЗ ФОРМУ - РАБОТАЕТ НА ПК) =====
-  function renderBasic(d) {
-  document.title = d.title;
-  currentBot = d.botUsername;
-  const isMovie = d.type === "movie";
-  const yt = (d.trailer.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/) || [])[1];
-  const watchText = d.inWatchlist ? "🗑 Убрать из списка" : "📌 В список";
-
-  // 🚀 АНТИ-КЭШ ДЛЯ КАРТИНКИ (чтобы новое фото применялось сразу)
-  if (d.poster) {
-      d.poster = d.poster.split('?')[0] + "?t=" + Date.now();
-  }
-
-  let basicInfoHtml = "";
-  if (d.country) basicInfoHtml += '<div class="card"><b>🌍 Страна:</b><span>' + esc(d.country) + "</span></div>";
-  if (d.genres) basicInfoHtml += '<div class="card"><b>🎭 Жанры:</b><span>' + esc(d.genres) + "</span></div>";
-
-  $("app").innerHTML =
-    (d.poster ? '<div class="hero"><img src="' + esc(d.poster) + '" alt=""></div>' : "") +
-    '<div class="container">' +
-    "<h1>" + esc(d.title) + "</h1>" +
-    '<div id="tmdb-orig-title"></div>' +
-    '<div id="tmdb-tagline"></div>' +
-    '<div class="meta"><span class="badge b-type">' + (isMovie ? "🍿 Фильм" : "📺 Сериал") + "</span>" +
-    (d.year ? '<span class="badge">📅 ' + esc(d.year) + "</span>" : "") +
-    (d.ratingTMDB ? '<span class="badge b-tmdb">★ TMDB: ' + esc(d.ratingTMDB) + "</span>" : "") +
-    (d.ratingKP ? '<span class="badge b-kp">★ КП: ' + esc(d.ratingKP) + "</span>" : "") + "</div>" +
-    '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
-    basicInfoHtml + 
-    '<div id="tmdb-cast-info"></div>' +
-    (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
-    '<div id="tmdb-budget-info"></div>' +
-    (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '?rel=0" allowfullscreen></iframe></div>' : "") +
-    '<div id="tmdb-similar-container"></div>' +
-    "</div>";
-
-  const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
-  $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
-
-  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ЧЕРЕЗ ФОРМУ - РАБОТАЕТ НА ПК) =====
   let inWatch = !!d.inWatchlist;
   let busy = false;
   const btnW = $("watch");
@@ -221,8 +182,8 @@ function renderBasic(d) {
           console.error("Ошибка отправки формы:", e);
           busy = false;
       }
-  }; // 👈 ЭТА СКОБКА ЗАКРЫВАЕТ btnW.onclick
-} // 👈 А ЭТА СКОБКА ЗАКРЫВАЕТ ВСЮ ФУНКЦИЮ renderBasic
+  };
+}
 
 function renderTmdb(t) {
     if (t.originalTitle && t.originalTitle !== document.title) {
