@@ -130,7 +130,10 @@ function renderBasic(d) {
     (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '?rel=0" allowfullscreen></iframe></div>' : "") +
     '<div id="tmdb-similar-container"></div>' +
     "</div>";
-
+// 🚀 АНТИ-КЭШ ДЛЯ КАРТИНКИ: заставляет браузер скачивать новое фото
+if (d.poster) {
+    d.poster = d.poster.split('?')[0] + "?t=" + Date.now();
+}
   const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
   $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
 
