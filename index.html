@@ -182,6 +182,15 @@ function renderTmdb(t) {
 
     const isMovie = reqType === "movie";
     let infoHtml = "";
+    
+    // 🚀 ВЫВОД ДЛИТЕЛЬНОСТИ
+    if (t.runtime && t.runtime > 0) {
+        const hours = Math.floor(t.runtime / 60);
+        const mins = t.runtime % 60;
+        let timeStr = (hours > 0 ? hours + " ч " : "") + (mins > 0 ? mins + " мин" : "");
+        infoHtml += '<div class="card"><b>⏱ Длительность:</b><span>' + timeStr + "</span></div>";
+    }
+
     if (t.director) infoHtml += '<div class="card"><b>' + (isMovie ? "🎬 Режиссёр:" : "🎬 Создатели:") + '</b><span>' + esc(t.director) + "</span></div>";
     if (t.cast) infoHtml += '<div class="card"><b>🎭 В ролях:</b><span>' + esc(t.cast) + "</span></div>";
     $("tmdb-cast-info").innerHTML = infoHtml;
