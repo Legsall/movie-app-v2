@@ -148,10 +148,14 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const urlParams = new URLSearchParams(window.location.search);
+               const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
-        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec"; // Убедитесь, что здесь правильная ссылка
+        
+        // 🚀 Читаем API и имя бота из URL. Если их нет — берем дефолтные.
+        const API_URL = urlParams.get('api') || "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
+        let botUsername = urlParams.get('bot') || "katxlog_bot";
+        
         const userId = tg.initDataUnsafe?.user?.id || urlParams.get('uid') || "0";
 
         let isInWatchlist = false;
@@ -273,7 +277,10 @@
                     }
                 }
 
-                botUsername = data.botUsername || "katxlog_bot";
+                // 🚀 Не перезаписываем имя бота, если оно уже пришло из URL
+if (!urlParams.get('bot') && data.botUsername) {
+    botUsername = data.botUsername;
+}
                 isInWatchlist = !!data.inWatchlist;
                 isMuted = !!data.isMuted;
                 
