@@ -145,7 +145,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
-        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec"; // Убедитесь, что ссылка правильная!
         const userId = tg.initDataUnsafe?.user?.id || urlParams.get('uid') || "0";
 
         let isInWatchlist = false;
@@ -197,7 +197,7 @@
                 updateWatchlistUI();
                 updateNotifyUI();
 
-                // Возвращаем стандартные кнопки и кнопку внизу (на случай, если перешли с "нет в базе")
+                // Возвращаем стандартные кнопки (на случай, если перешли с "нет в базе")
                 document.getElementById('action-row').style.display = 'flex';
                 const bottomBtn = document.getElementById('main-action-btn');
                 bottomBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Смотреть в боте`;
@@ -356,7 +356,7 @@
             }
         }
 
-               async function toggleNotify() {
+        async function toggleNotify() {
             const btn = document.getElementById('notify-btn');
             if (!userId || userId === "0" || userId === 0) {
                 tg.showAlert("❌ Не удалось определить ваш Telegram ID.\n\nОткройте приложение через бота (кнопка «Подробнее»).");
@@ -367,45 +367,33 @@
 
             try {
                 const newState = !isMuted ? 1 : 0;
-                // Добавляем &_t= для сброса кэша браузера
                 const url = `${API_URL}?action=toggle_notify&userId=${encodeURIComponent(userId)}&rowIndex=${encodeURIComponent(rowIndex)}&type=${encodeURIComponent(type)}&state=${newState}&_t=${Date.now()}`;
                 const res = await fetch(url);
                 const text = await res.text();
-                
                 let data;
-                try { data = JSON.parse(text); } 
-                catch(e) { 
-                    console.error("Сырой ответ от сервера:", text);
-                    throw new Error("Сервер вернул не JSON. Возможно, Web App не пересобран."); 
-                }
+                try { data = JSON.parse(text); } catch(e) { throw new Error("Сервер вернул не JSON."); }
 
                 if (data.ok) {
                     isMuted = !!data.muted;
                     updateNotifyUI();
                     try { tg.HapticFeedback?.notificationOccurred('success'); } catch(e) {}
-                } else {
-                    throw new Error(data.error || "Неизвестная ошибка сервера");
-                }
+                } else { throw new Error(data.error || "Неизвестная ошибка"); }
             } catch (e) {
-                console.error("Ошибка toggleNotify:", e);
+                console.error("toggleNotify:", e);
                 tg.showAlert("❌ Ошибка: " + e.message);
             } finally {
                 btn.disabled = false; btn.style.opacity = '1';
             }
         }
 
-        // 🚀 ИСПРАВЛЕННАЯ ФУНКЦИЯ "ПОДЕЛИТЬСЯ"
         function shareLink() {
             try {
                 try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
-                
                 let cleanBotName = String(botUsername).replace('@', '').trim();
                 if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
-                
                 let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
                 let botLink = `https://t.me/${cleanBotName}?start=${startParam}`;
                 let title = document.getElementById('title').textContent;
-                
                 let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`;
                 tg.openTelegramLink(shareUrl);
             } catch (e) {
@@ -425,6 +413,7 @@
             }
         }
 
+        // 🚀 КЛИК ПО ПОХОЖИМ
         function openSimilar(id, kind, rowIndex, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch(e) {}
             if (rowIndex && rowIndex > 0) {
@@ -435,7 +424,7 @@
             }
         }
 
-        // 🚀 ОБНОВЛЕННАЯ ЗАГРУЗКА ИЗ TMDB
+        // 🚀 ЗАГРУЗКА КАРТОЧКИ ИЗ TMDB (когда нет в базе)
         async function loadTmdbCard(id, kind, title, year) {
             try {
                 window.scrollTo(0, 0);
@@ -446,7 +435,7 @@
                 document.getElementById('badges-container').innerHTML = `<span class="badge">⏳ Загрузка данных...</span>`;
                 document.getElementById('description').textContent = 'Загрузка описания...';
                 
-                // Очищаем старые данные
+                // ОЧИЩАЕМ СТАРЫЕ ДАННЫЕ
                 document.getElementById('country').innerHTML = "—";
                 document.getElementById('genres').textContent = "—";
                 
@@ -458,12 +447,13 @@
                 document.getElementById('seasons-section').style.display = 'none';
                 document.getElementById('similar-section').style.display = 'none';
                 document.getElementById('providers-container').style.display = 'none';
-                document.getElementById('action-row').style.display = 'none';
+                document.getElementById('action-row').style.display = 'none'; 
                 
                 const bottomBtn = document.getElementById('main-action-btn');
                 bottomBtn.innerHTML = '⏳ Загрузка...';
                 bottomBtn.onclick = null;
 
+                // 🚀 ЗАПРОС К TMDB
                 const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${id}&kind=${kind}&_t=${Date.now()}`);
                 const data = await res.json();
                 
@@ -522,6 +512,7 @@
             }
         }
 
+        // 🚀 ОТПРАВКА ЗАЯВКИ В БОТА (кнопка внизу)
         async function requestMovie(title, year, kind) {
             try {
                 const btn = document.getElementById('main-action-btn');
@@ -545,10 +536,9 @@
             }
         }
 
-        function closeApp() {
-            tg.close();
-        }
+        function closeApp() { tg.close(); }
 
+        // Запуск
         loadBasic();
     </script>
 </body>
