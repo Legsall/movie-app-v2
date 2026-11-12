@@ -1,237 +1,411 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Фильм</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-:root{--bg:#0f1621;--card:rgba(30,41,59,.7);--muted:#94a3b8;--accent:#fbbf24}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;padding-bottom:100px;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
-.container{padding:0 16px;max-width:600px;margin:0 auto}
-.hero{position:relative;max-height:55vh;margin-bottom:20px;border-radius:0 0 24px 24px;overflow:hidden;background:#1a2332}
-.hero img{width:100%;display:block;object-fit:cover}
-.hero:after{content:"";position:absolute;left:0;bottom:0;width:100%;height:40%;background:linear-gradient(to top,var(--bg),transparent);pointer-events:none}
-h1{font-size:32px;font-weight:900;margin:0 0 4px;line-height:1.1;background:linear-gradient(to right,#fff,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.orig{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:8px}
-.tag{font-size:15px;color:#cbd5e1;font-style:italic;margin-bottom:16px;opacity:.8}
-.meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
-.badge{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:rgba(148,163,184,.15);color:#e2e8f0}
-.b-type{background:rgba(59,130,246,.2);color:#93c5fd}
-.b-tmdb{background:rgba(251,191,36,.15);color:var(--accent)}
-.b-kp{background:rgba(239,68,68,.15);color:#f87171}
-.row{display:flex;gap:10px;margin-bottom:24px}
-button{font:inherit;cursor:pointer;transition:transform .1s}
-button:active{transform:scale(.95)}
-.act{flex:1;padding:14px;border-radius:14px;font-size:15px;font-weight:700}
-.share{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
-.watch{background:rgba(251,191,36,.15);color:var(--accent);border:1px solid rgba(251,191,36,.3)}
-.card{display:flex;background:var(--card);border:1px solid rgba(255,255,255,.03);border-radius:16px;padding:14px 16px;margin-bottom:10px;font-size:14px;color:#e2e8f0}
-.card b{min-width:110px;margin-right:8px;color:var(--muted);font-weight:500}
-.card.desc{display:block;border-radius:20px;padding:20px;margin:14px 0 24px;font-size:15px;color:#cbd5e1}
-.desc h3{margin:0 0 12px;font-size:16px;color:#fff}
-.trailer{aspect-ratio:16/9;border-radius:20px;overflow:hidden;margin-bottom:24px;background:#000}
-.trailer iframe{width:100%;height:100%;border:0}
-h2{font-size:18px;font-weight:800;margin:0 0 12px}
-.sim{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;margin-bottom:24px}
-.sim::-webkit-scrollbar{display:none}
-.sim button{flex:0 0 110px;padding:0;border:0;background:none;color:#fff;text-align:left}
-.sim img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:12px;margin-bottom:6px;background:#1a2332}
-.sim span{display:block;font-size:13px;font-weight:600}
-.sim small{font-size:11px;color:var(--muted)}
-.bar{position:fixed;left:0;bottom:0;width:100%;padding:16px 20px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 60%,transparent);z-index:100}
-.close{width:100%;padding:18px;border:0;border-radius:16px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb)}
-.msg{padding:80px 20px;text-align:center;color:var(--muted)}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Загрузка...</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #101114; --card: #1c1d22; --text: #ffffff; --hint: #8b8e96; --accent: #2ea6ff; --gold: #f5c518;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 90px; overflow-x: hidden; }
+        
+        /* Скелетон-загрузка */
+        .skeleton { background: linear-gradient(90deg, #1c1d22 25%, #2a2c33 50%, #1c1d22 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        #skeleton-loader { padding: 15px; }
+        .skel-poster { width: 100%; height: 450px; margin-bottom: 15px; }
+        .skel-title { width: 70%; height: 30px; margin-bottom: 10px; }
+        .skel-text { width: 100%; height: 20px; margin-bottom: 8px; }
+
+        /* Основной контент */
+        #app-content { display: none; }
+        
+        /* Кнопка закрытия (сверху) */
+        .top-close-btn { position: fixed; top: 15px; right: 15px; z-index: 100; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .poster { width: 100%; height: auto; display: block; }
+        .content { padding: 15px; }
+
+        .title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .title { font-size: 24px; font-weight: 800; line-height: 1.2; }
+        .original-title { color: var(--hint); font-size: 14px; font-style: italic; margin-bottom: 10px; }
+        
+        /* Бейджи с инфо */
+        .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .badge { background: var(--card); padding: 6px 12px; border-radius: 8px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .badge.gold { color: var(--gold); }
+        .badge.red { color: #ff5252; }
+        .badge.blue { color: var(--accent); }
+
+        /* Кнопки действий */
+        .action-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-secondary { background: var(--card); color: white; border: 1px solid #333; }
+        .btn-toggle { background: transparent; color: var(--hint); border: 1px solid var(--hint); }
+        .btn-toggle.active { background: rgba(245, 197, 24, 0.1); color: var(--gold); border-color: var(--gold); }
+
+        /* Блок с информацией */
+        .info-box { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+        .info-row { display: flex; margin-bottom: 10px; font-size: 14px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-label { color: var(--hint); width: 120px; flex-shrink: 0; }
+        .info-value { color: var(--text); flex: 1; }
+
+        /* Описание (Read More) */
+        .desc { font-size: 15px; line-height: 1.5; color: #ccc; position: relative; }
+        .desc.collapsed { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        .read-more { color: var(--accent); font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 5px; display: inline-block; }
+
+        /* Карусель кадров (Backdrops) */
+        .backdrops-container { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .backdrops-container::-webkit-scrollbar { display: none; }
+        .backdrop-img { height: 150px; border-radius: 8px; scroll-snap-align: start; object-fit: cover; }
+
+        /* Список сезонов */
+        .seasons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .season-card { background: var(--card); padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; }
+        .season-card .num { font-size: 18px; font-weight: 700; color: var(--accent); }
+        .season-card .eps { font-size: 12px; color: var(--hint); }
+
+        /* Похожие (карусель) */
+        .similar-container { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .similar-container::-webkit-scrollbar { display: none; }
+        .similar-card { width: 110px; flex-shrink: 0; scroll-snap-align: start; }
+        .similar-card img { width: 100%; border-radius: 8px; margin-bottom: 5px; }
+        .similar-card .title { font-size: 12px; font-weight: 600; line-height: 1.2; margin-bottom: 2px; }
+        .similar-card .year { font-size: 11px; color: var(--hint); }
+
+        /* Провайдеры */
+        .providers-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .provider-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+
+        h3 { font-size: 18px; margin-bottom: 12px; font-weight: 700; }
+        .section { margin-bottom: 25px; }
+
+        /* Фиксированная кнопка снизу */
+        .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(transparent, #101114 30%); }
+        .btn-watch { width: 100%; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(46, 166, 255, 0.4); }
+    </style>
 </head>
 <body>
-<div id="app"><div class="msg">⏳ Загрузка…</div></div>
-<div class="bar"><button class="close" id="close">Закрыть</button></div>
 
-<script>
-const API = "https://script.google.com/macros/s/AKfycbx_lOo_ZblD870QKlBK2rI_bhr-REWavDL_txy6XToOCoC66Opbv7p0mJ33G1i_wiY95w/exec"; 
+    <button class="top-close-btn" onclick="closeApp()">✕</button>
 
-const tg = Telegram.WebApp;
-tg.ready();
-tg.expand();
-try { tg.setHeaderColor("#0f1621"); tg.setBackgroundColor("#0f1621"); } catch (e) {}
+    <div id="skeleton-loader">
+        <div class="skeleton skel-poster"></div>
+        <div class="skeleton skel-title"></div>
+        <div class="skeleton skel-text"></div>
+        <div class="skeleton skel-text" style="width: 80%;"></div>
+    </div>
 
-const $ = id => document.getElementById(id);
-const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const openTg = url => tg.openTelegramLink ? tg.openTelegramLink(url) : (location.href = url);
-
-$("close").onclick = () => tg.close();
-
-// 🚀 ПОЛУЧЕНИЕ USER ID (С ЗАЩИТОЙ ОТ ПК)
-let userId = tg.initDataUnsafe?.user?.id;
-if (!userId && tg.initData) {
-    try {
-        const urlParams = new URLSearchParams(tg.initData);
-        const userStr = urlParams.get('user');
-        if (userStr) userId = JSON.parse(userStr).id;
-    } catch (e) {}
-}
-userId = userId || "7990100977"; // Для теста на ПК
-
-const p = new URLSearchParams(location.search);
-const reqType = p.get("type") || "movie";
-const reqIndex = p.get("rowIndex") || "";
-let currentBot = "";
-
-fetch(API + "?action=basic&type=" + reqType + "&rowIndex=" + reqIndex + "&userId=" + userId + "&t=" + Date.now())
-  .then(r => r.json())
-  .then(d => {
-      if (d.ok) {
-          renderBasic(d);
-          fetch(API + "?action=tmdb&type=" + reqType + "&rowIndex=" + reqIndex + "&t=" + Date.now())
-            .then(r => r.json())
-            .then(t => { if(t.ok) renderTmdb(t); })
-            .catch(e => console.log("TMDB error:", e));
-      } else {
-          fail(d.error);
-      }
-  })
-  .catch((err) => fail("Ошибка: " + err.message));
-
-function fail(m) {
-  $("app").innerHTML = '<div class="msg">😔 ' + esc(m || "Не удалось загрузить данные") + "</div>";
-}
-
-function renderBasic(d) {
-  document.title = d.title;
-  currentBot = d.botUsername;
-  const isMovie = d.type === "movie";
-  const yt = (d.trailer.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/) || [])[1];
-  const watchText = d.inWatchlist ? "🗑 Убрать из списка" : "📌 В список";
-
-  // 🚀 АНТИ-КЭШ ДЛЯ КАРТИНКИ
-  if (d.poster) {
-      d.poster = d.poster.split('?')[0] + "?t=" + Date.now();
-  }
-
-  let basicInfoHtml = "";
-  if (d.country) basicInfoHtml += '<div class="card"><b>🌍 Страна:</b><span>' + esc(d.country) + "</span></div>";
-  if (d.genres) basicInfoHtml += '<div class="card"><b>🎭 Жанры:</b><span>' + esc(d.genres) + "</span></div>";
-
-  $("app").innerHTML =
-    (d.poster ? '<div class="hero"><img src="' + esc(d.poster) + '" alt=""></div>' : "") +
-    '<div class="container">' +
-    "<h1>" + esc(d.title) + "</h1>" +
-    '<div id="tmdb-orig-title"></div>' +
-    '<div id="tmdb-tagline"></div>' +
-    '<div class="meta"><span class="badge b-type">' + (isMovie ? "🍿 Фильм" : "📺 Сериал") + "</span>" +
-    (d.year ? '<span class="badge">📅 ' + esc(d.year) + "</span>" : "") +
-    (d.ratingTMDB ? '<span class="badge b-tmdb">★ TMDB: ' + esc(d.ratingTMDB) + "</span>" : "") +
-    (d.ratingKP ? '<span class="badge b-kp">★ КП: ' + esc(d.ratingKP) + "</span>" : "") + "</div>" +
-    '<div class="row"><button class="act share" id="share">📤 Поделиться</button><button class="act watch" id="watch">' + watchText + '</button></div>' +
-    basicInfoHtml + 
-    '<div id="tmdb-cast-info"></div>' +
-    (d.description ? '<div class="card desc"><h3>📝 О ' + (isMovie ? "фильме" : "сериале") + "</h3>" + esc(d.description) + "</div>" : "") +
-    '<div id="tmdb-budget-info"></div>' +
-    (yt ? '<div class="trailer"><iframe src="https://www.youtube.com/embed/' + yt + '?rel=0" allowfullscreen></iframe></div>' : "") +
-    '<div id="tmdb-similar-container"></div>' +
-    "</div>";
-
-  const shareLink = "https://t.me/" + d.botUsername + "?start=" + encodeURIComponent((isMovie ? "open_movie_" : "open_") + d.rowIndex);
-  $("share").onclick = () => openTg("https://t.me/share/url?url=" + encodeURIComponent(shareLink) + "&text=" + encodeURIComponent("Смотри «" + d.title + "» в нашем боте!"));
-
-  // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (ФИНАЛЬНЫЙ ОБХОД БЛОКИРОВОК) =====
-   // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (100% РАБОТАЕТ НА ТЕЛЕФОНЕ) =====
-    // ===== КНОПКА "В СПИСОК" / "УБРАТЬ" (100% РАБОТАЕТ НА ТЕЛЕФОНЕ) =====
-  let inWatch = !!d.inWatchlist;
-  let busy = false;
-  const btnW = $("watch");
-  const label = () => inWatch ? "🗑 Убрать из списка" : "📌 В список";
-
-  btnW.onclick = () => {
-      if (busy) return;
-      busy = true;
-      
-      const wantAdd = !inWatch;
-      btnW.innerHTML = "⏳ Секунду…";
-
-      // Формируем правильную ссылку с action=set_watch
-      const url = API + "?action=set_watch&state=" + (wantAdd ? "1" : "0") +
-                  "&rowIndex=" + d.rowIndex + "&type=" + d.type +
-                  "&userId=" + userId + "&t=" + Date.now();
-
-      // Отправляем запрос без ожидания ответа
-      try {
-          fetch(url, { mode: 'no-cors', cache: 'no-store' })
-            .catch(() => {}); // Игнорируем ошибку CORS
-      } catch (e) {}
-
-      // Меняем кнопку через 1.5 секунды
-      setTimeout(() => {
-          inWatch = wantAdd;
-          btnW.innerHTML = label();
-          if (tg) tg.HapticFeedback.notificationOccurred("success");
-          busy = false;
-      }, 1500);
-  };
-}
-
-function renderTmdb(t) {
-    if (t.originalTitle && t.originalTitle !== document.title) {
-        $("tmdb-orig-title").innerHTML = '<div class="orig">' + esc(t.originalTitle) + "</div>";
-    }
-    if (t.tagline) {
-        $("tmdb-tagline").innerHTML = '<div class="tag">«' + esc(t.tagline) + "»</div>";
-    }
-
-    const isMovie = reqType === "movie";
-    let infoHtml = "";
-    
-    // 🚀 ВЫВОД ДЛИТЕЛЬНОСТИ
-    if (t.runtime && t.runtime > 0) {
-        const hours = Math.floor(t.runtime / 60);
-        const mins = t.runtime % 60;
-        let timeStr = (hours > 0 ? hours + " ч " : "") + (mins > 0 ? mins + " мин" : "");
-        infoHtml += '<div class="card"><b>⏱ Длительность:</b><span>' + timeStr + "</span></div>";
-    }
-
-    if (t.director) infoHtml += '<div class="card"><b>' + (isMovie ? "🎬 Режиссёр:" : "🎬 Создатели:") + '</b><span>' + esc(t.director) + "</span></div>";
-    if (t.cast) infoHtml += '<div class="card"><b>🎭 В ролях:</b><span>' + esc(t.cast) + "</span></div>";
-    $("tmdb-cast-info").innerHTML = infoHtml;
-
-    let financeHtml = "";
-    let budgetText = "Нет данных";
-    let bKP = Number(t.budgetKP);
-    let bTMDB = Number(t.budget);
-
-    if (!isNaN(bKP) && bKP > 0) budgetText = "$" + bKP.toLocaleString('ru-RU');
-    else if (!isNaN(bTMDB) && bTMDB > 0) budgetText = "$" + bTMDB.toLocaleString('ru-RU');
-    
-    financeHtml += '<div class="card" style="margin-top:-10px;"><b>💰 Бюджет:</b><span>' + budgetText + "</span></div>";
-
-    if (Number(t.feesUSA) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇺🇸 Сборы в США:</b><span>$' + Number(t.feesUSA).toLocaleString('ru-RU') + "</span></div>";
-    if (Number(t.feesRussia) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🇷🇺 Сборы в РФ:</b><span>$' + Number(t.feesRussia).toLocaleString('ru-RU') + "</span></div>";
-    if (Number(t.feesWorld) > 0) financeHtml += '<div class="card" style="margin-top:-10px;"><b>🌍 Сборы в мире:</b><span>$' + Number(t.feesWorld).toLocaleString('ru-RU') + "</span></div>";
-
-    if (t.premiereWorld) {
-        let pDate = new Date(t.premiereWorld);
-        if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🌍 Премьера в мире:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
-    }
-    if (t.premiereRussia) {
-        let pDate = new Date(t.premiereRussia);
-        if (!isNaN(pDate)) financeHtml += '<div class="card"><b>🇷🇺 Премьера в РФ:</b><span>' + pDate.toLocaleDateString('ru-RU') + "</span></div>";
-    }
-    if (t.ageRating) financeHtml += '<div class="card"><b>🔞 Возраст:</b><span>' + esc(t.ageRating) + "</span></div>";
-    if (t.ratingMpaa) financeHtml += '<div class="card"><b>🎬 Рейтинг MPAA:</b><span>' + esc(t.ratingMpaa) + "</span></div>";
-    
-    $("tmdb-budget-info").innerHTML = financeHtml;
-
-    if (t.similar && t.similar.length > 0) {
-        let simHtml = "<h2>🎬 Похожие</h2><div class=\"sim\">" + t.similar.map(s =>
-            '<button data-id="' + esc(s.id) + '" data-k="' + esc(s.kind) + '"><img src="' + esc(s.poster) + '" alt=""><span>' + esc(s.title) + "</span><small>" + esc(s.year) + "</small></button>").join("") + "</div>";
-        $("tmdb-similar-container").innerHTML = simHtml;
+    <div id="app-content">
+        <img id="poster" class="poster" src="" alt="Постер">
         
-        document.querySelectorAll(".sim button").forEach(b => {
-            b.onclick = () => openTg("https://t.me/" + currentBot + "?start=" + encodeURIComponent("sim_" + b.dataset.id + "_" + b.dataset.k));
-        });
-    }
-}
-</script>
+        <div class="content">
+            <div class="title-row">
+                <div id="title" class="title"></div>
+            </div>
+            <div id="originalTitle" class="original-title"></div>
+            <div id="tagline" class="original-title" style="color: var(--hint);"></div>
+
+            <div class="badges" id="badges-container"></div>
+
+            <div class="action-row">
+                <button class="btn btn-secondary" onclick="shareLink()">📤 Поделиться</button>
+                <button id="watchlist-btn" class="btn btn-toggle" onclick="toggleWatchlist()">📌 В список</button>
+                <button id="notify-btn" class="btn btn-toggle" onclick="toggleNotify()">🔔 Уведомления</button>
+            </div>
+
+            <div class="info-box" id="info-box">
+                <div class="info-row"><div class="info-label">🌍 Страна:</div><div id="country" class="info-value"></div></div>
+                <div class="info-row"><div class="info-label">🎭 Жанры:</div><div id="genres" class="info-value"></div></div>
+                <div class="info-row" id="director-row"><div class="info-label">🎬 Создатели:</div><div id="director" class="info-value"></div></div>
+                <div class="info-row" id="cast-row"><div class="info-label">🎭 В ролях:</div><div id="cast" class="info-value"></div></div>
+                <div class="info-row" id="companies-row"><div class="info-label">🏢 Студии:</div><div id="companies" class="info-value"></div></div>
+            </div>
+
+            <div id="providers-container" class="section" style="display: none;">
+                <h3>Где смотреть</h3>
+                <div id="providers" class="providers-row"></div>
+            </div>
+
+            <div class="section">
+                <h3>📝 О фильме</h3>
+                <div id="description" class="desc collapsed"></div>
+                <span id="readMoreBtn" class="read-more" onclick="toggleReadMore()">Читать далее</span>
+            </div>
+
+            <div id="backdrops-section" class="section" style="display: none;">
+                <h3>📸 Кадры</h3>
+                <div id="backdrops" class="backdrops-container"></div>
+            </div>
+
+            <div id="seasons-section" class="section" style="display: none;">
+                <h3>📺 Сезоны</h3>
+                <div id="seasons" class="seasons-grid"></div>
+            </div>
+
+            <div id="trailer-section" class="section" style="display: none;">
+                <h3>▶️ Трейлер</h3>
+                <div id="trailer-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
+                    <iframe id="trailer-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="" frameborder="0" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div id="similar-section" class="section" style="display: none;">
+                <h3>🎬 Похожие</h3>
+                <div id="similar" class="similar-container"></div>
+            </div>
+        </div>
+
+        <div class="fixed-bottom">
+            <button class="btn-watch" onclick="openInBot()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Смотреть в боте
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const rowIndex = urlParams.get('rowIndex');
+        const type = urlParams.get('type') || 'movie';
+        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec"; // ⚠️ УКАЖИТЕ ВАШ URL
+        const userId = tg.initDataUnsafe?.user?.id || "0";
+
+        let isInWatchlist = false;
+        let isMuted = false;
+        let botUsername = "katxlog_bot";
+
+        // Загрузка базовой инфы
+        async function loadBasic() {
+            try {
+                const res = await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}`);
+                const data = await res.json();
+                
+                if (!data.ok) throw new Error(data.error);
+
+                document.title = data.title;
+                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
+                document.getElementById('title').textContent = data.title;
+                
+                let badgesHtml = `<span class="badge">${type === 'movie' ? '🍿 Фильм' : '📺 Сериал'}</span>`;
+                if (data.year) badgesHtml += `<span class="badge">📅 ${data.year}</span>`;
+                if (data.ratingTMDB) badgesHtml += `<span class="badge gold">⭐ TMDB: ${data.ratingTMDB}</span>`;
+                if (data.ratingKP) badgesHtml += `<span class="badge red">⭐ КП: ${data.ratingKP}</span>`;
+                document.getElementById('badges-container').innerHTML = badgesHtml;
+
+                document.getElementById('country').innerHTML = data.country || "—";
+                document.getElementById('genres').textContent = data.genres || "—";
+                
+                if (data.description) {
+                    document.getElementById('description').textContent = data.description;
+                } else {
+                    document.getElementById('description').style.display = 'none';
+                    document.getElementById('readMoreBtn').style.display = 'none';
+                }
+
+                if (data.trailer) {
+                    document.getElementById('trailer-section').style.display = 'block';
+                    const vidId = data.trailer.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&]{11})/);
+                    if (vidId && vidId[1]) {
+                        document.getElementById('trailer-iframe').src = `https://www.youtube.com/embed/${vidId[1]}`;
+                    }
+                }
+
+                botUsername = data.botUsername || "katxlog_bot";
+                isInWatchlist = data.inWatchlist;
+                updateWatchlistUI();
+
+                document.getElementById('skeleton-loader').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+
+                // Загружаем тяжелые данные (TMDB + KP)
+                loadExtended();
+
+            } catch (e) {
+                alert("Ошибка загрузки: " + e.message);
+            }
+        }
+
+        // Загрузка расширенной инфы
+        async function loadExtended() {
+            try {
+                const res = await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}`);
+                const d = await res.json();
+
+                if (!d.ok) return;
+
+                if (d.originalTitle) document.getElementById('originalTitle').textContent = d.originalTitle;
+                if (d.tagline) document.getElementById('tagline').textContent = `«${d.tagline}»`;
+
+                // Дополнительные бейджи
+                let badgesHtml = document.getElementById('badges-container').innerHTML;
+                if (d.status) {
+                    let st = d.status === "Ended" ? "Завершен" : d.status === "Returning Series" ? "Идет показ" : d.status;
+                    badgesHtml += `<span class="badge">🚦 ${st}</span>`;
+                }
+                if (d.runtime > 0) {
+                    let h = Math.floor(d.runtime / 60); let m = d.runtime % 60;
+                    let timeStr = h > 0 ? `${h} ч ${m} мин` : `${m} мин`;
+                    badgesHtml += `<span class="badge">⏱ ${timeStr}</span>`;
+                }
+                if (d.ageRating) badgesHtml += `<span class="badge red">${d.ageRating}</span>`;
+                if (d.premiereWorld) {
+                    let date = new Date(d.premiereWorld).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+                    badgesHtml += `<span class="badge">📅 ${date}</span>`;
+                }
+                document.getElementById('badges-container').innerHTML = badgesHtml;
+
+                if (d.director) document.getElementById('director').textContent = d.director;
+                else document.getElementById('director-row').style.display = 'none';
+
+                if (d.cast) document.getElementById('cast').textContent = d.cast;
+                else document.getElementById('cast-row').style.display = 'none';
+
+                if (d.companies && d.companies.length > 0) {
+                    document.getElementById('companies').textContent = d.companies.join(', ');
+                } else {
+                    document.getElementById('companies-row').style.display = 'none';
+                }
+
+                // Провайдеры
+                if (d.watchProviders && d.watchProviders.length > 0) {
+                    document.getElementById('providers-container').style.display = 'block';
+                    document.getElementById('providers').innerHTML = d.watchProviders.map(p => 
+                        `<img src="${p.logo}" class="provider-logo" title="${p.name}" alt="${p.name}">`
+                    ).join('');
+                }
+
+                // Кадры (Backdrops)
+                if (d.backdrops && d.backdrops.length > 0) {
+                    document.getElementById('backdrops-section').style.display = 'block';
+                    document.getElementById('backdrops').innerHTML = d.backdrops.map(b => 
+                        `<img src="${b}" class="backdrop-img">`
+                    ).join('');
+                }
+
+                // Сезоны (для сериалов)
+                if (type === 'series' && d.seasons && d.seasons.length > 0) {
+                    document.getElementById('seasons-section').style.display = 'block';
+                    document.getElementById('seasons').innerHTML = d.seasons.map(s => 
+                        `<div class="season-card">
+                            <div class="num">Сезон ${s.num}</div>
+                            <div class="eps">${s.episodes} сер.</div>
+                        </div>`
+                    ).join('');
+                }
+
+                // Похожие
+                if (d.similar && d.similar.length > 0) {
+                    document.getElementById('similar-section').style.display = 'block';
+                    document.getElementById('similar').innerHTML = d.similar.map(m => 
+                        `<div class="similar-card" onclick="openSimilar('${m.id}', '${m.kind}')">
+                            <img src="${m.poster}">
+                            <div class="title">${m.title}</div>
+                            <div class="year">${m.year}</div>
+                        </div>`
+                    ).join('');
+                }
+
+            } catch (e) {
+                console.log("Ошибка доп. данных: ", e);
+            }
+        }
+
+        // Взаимодействия
+        function toggleReadMore() {
+            const desc = document.getElementById('description');
+            const btn = document.getElementById('readMoreBtn');
+            if (desc.classList.contains('collapsed')) {
+                desc.classList.remove('collapsed');
+                btn.textContent = 'Скрыть';
+            } else {
+                desc.classList.add('collapsed');
+                btn.textContent = 'Читать далее';
+            }
+        }
+
+        async function toggleWatchlist() {
+            const btn = document.getElementById('watchlist-btn');
+            btn.style.opacity = '0.5';
+            try {
+                const newState = !isInWatchlist ? 1 : 0;
+                const res = await fetch(`${API_URL}?action=set_watch&userId=${userId}&rowIndex=${rowIndex}&type=${type}&state=${newState}`);
+                const data = await res.json();
+                if (data.ok) {
+                    isInWatchlist = data.inWatchlist;
+                    updateWatchlistUI();
+                }
+            } catch(e) { console.log(e); }
+            btn.style.opacity = '1';
+        }
+
+        function updateWatchlistUI() {
+            const btn = document.getElementById('watchlist-btn');
+            if (isInWatchlist) {
+                btn.classList.add('active');
+                btn.innerHTML = '✅ В списке';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '📌 В список';
+            }
+        }
+
+        async function toggleNotify() {
+            const btn = document.getElementById('notify-btn');
+            btn.style.opacity = '0.5';
+            try {
+                const newState = !isMuted ? 1 : 0;
+                const res = await fetch(`${API_URL}?action=toggle_notify&userId=${userId}&rowIndex=${rowIndex}&type=${type}&state=${newState}`);
+                const data = await res.json();
+                if (data.ok) {
+                    isMuted = data.muted;
+                    if (isMuted) {
+                        btn.classList.remove('active');
+                        btn.innerHTML = '🔕 Выкл.';
+                    } else {
+                        btn.classList.add('active');
+                        btn.innerHTML = '🔔 Увед.';
+                    }
+                }
+            } catch(e) { console.log(e); }
+            btn.style.opacity = '1';
+        }
+
+        function shareLink() {
+            const url = `https://t.me/${botUsername}?start=open_${type === 'movie' ? 'movie_' : ''}${rowIndex}`;
+            const title = document.getElementById('title').textContent;
+            if (navigator.share) {
+                navigator.share({ title: title, url: url });
+            } else {
+                window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank');
+            }
+        }
+
+        function openInBot() {
+            const url = `https://t.me/${botUsername}?start=open_${type === 'movie' ? 'movie_' : ''}${rowIndex}`;
+            tg.openTelegramLink(url);
+        }
+
+        function openSimilar(id, kind) {
+            // Здесь можно реализовать переход на другую карточку, если хотите
+            tg.showAlert("Чтобы посмотреть этот фильм, напишите его название боту!");
+        }
+
+        function closeApp() {
+            tg.close();
+        }
+
+        // Запуск
+        loadBasic();
+    </script>
 </body>
 </html>
