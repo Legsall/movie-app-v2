@@ -398,12 +398,8 @@
                 let botLink = `https://t.me/${cleanBotName}?start=${startParam}`;
                 let title = document.getElementById('title').textContent;
                 
-                // Формируем ссылку для системного окна "Поделиться" Telegram
                 let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`;
-                
-                // Открываем через нативный API Telegram (работает во всех клиентах)
                 tg.openTelegramLink(shareUrl);
-                
             } catch (e) {
                 tg.showAlert("Не удалось поделиться: " + e.message);
             }
@@ -421,24 +417,19 @@
             }
         }
 
-        // 🚀 ОБНОВЛЕННАЯ ФУНКЦИЯ КЛИКА ПО ПОХОЖИМ
         function openSimilar(id, kind, rowIndex, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch(e) {}
-            
             if (rowIndex && rowIndex > 0) {
-                // Если фильм ЕСТЬ в базе — перезагружаем Web App на него
                 const newType = kind === 'm' ? 'movie' : 'series';
                 window.location.search = `?rowIndex=${rowIndex}&type=${newType}`;
             } else {
-                // Если НЕТ в базе — грузим карточку из TMDB
                 loadTmdbCard(id, kind, title, year);
             }
         }
 
-        // 🚀 ЗАГРУЗКА КАРТОЧКИ ИЗ TMDB (когда нет в базе)
+        // 🚀 ОБНОВЛЕННАЯ ЗАГРУЗКА ИЗ TMDB
         async function loadTmdbCard(id, kind, title, year) {
             try {
-                // Сразу меняем UI на состояние загрузки
                 window.scrollTo(0, 0);
                 document.getElementById('title').textContent = title;
                 document.getElementById('originalTitle').textContent = '';
@@ -447,7 +438,10 @@
                 document.getElementById('badges-container').innerHTML = `<span class="badge">⏳ Загрузка данных...</span>`;
                 document.getElementById('description').textContent = 'Загрузка описания...';
                 
-                // Прячем лишнее
+                // Очищаем старые данные
+                document.getElementById('country').innerHTML = "—";
+                document.getElementById('genres').textContent = "—";
+                
                 document.getElementById('director-row').style.display = 'none';
                 document.getElementById('cast-row').style.display = 'none';
                 document.getElementById('companies-row').style.display = 'none';
@@ -456,14 +450,12 @@
                 document.getElementById('seasons-section').style.display = 'none';
                 document.getElementById('similar-section').style.display = 'none';
                 document.getElementById('providers-container').style.display = 'none';
-                document.getElementById('action-row').style.display = 'none'; // Прячем кнопки "В список" и "Уведомления"
+                document.getElementById('action-row').style.display = 'none';
                 
-                // Меняем нижнюю кнопку на "Загрузка"
                 const bottomBtn = document.getElementById('main-action-btn');
                 bottomBtn.innerHTML = '⏳ Загрузка...';
                 bottomBtn.onclick = null;
 
-                // Запрашиваем данные по ID из TMDB
                 const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${id}&kind=${kind}&_t=${Date.now()}`);
                 const data = await res.json();
                 
@@ -482,6 +474,15 @@
                     document.getElementById('country').innerHTML = data.country || "—";
                     document.getElementById('genres').textContent = data.genres || "—";
                     
+                    if (data.director) {
+                        document.getElementById('director').textContent = data.director;
+                        document.getElementById('director-row').style.display = 'flex';
+                    }
+                    if (data.cast) {
+                        document.getElementById('cast').textContent = data.cast;
+                        document.getElementById('cast-row').style.display = 'flex';
+                    }
+
                     if (data.description) {
                         document.getElementById('description').textContent = data.description;
                         document.getElementById('description').style.display = 'block';
@@ -499,27 +500,25 @@
                         }
                     }
 
-                    // 🚀 МЕНЯЕМ НИЖНЮЮ КНОПКУ НА "ОСТАВИТЬ ЗАЯВКУ"
                     bottomBtn.innerHTML = `📩 Оставить заявку`;
                     bottomBtn.style.background = 'var(--accent)';
                     bottomBtn.onclick = () => requestMovie(data.title, data.year, kind);
                 } else {
-                    tg.showAlert("Ошибка загрузки данных из TMDB");
+                    tg.showAlert("Ошибка TMDB: " + (data.error || "Неизвестная ошибка"));
                     bottomBtn.innerHTML = 'Ошибка загрузки';
                 }
             } catch(e) {
                 console.error("loadTmdbCard error:", e);
-                tg.showAlert("Ошибка: " + e.message);
+                tg.showAlert("Ошибка сети: " + e.message);
+                document.getElementById('main-action-btn').innerHTML = 'Ошибка сети';
             }
         }
 
-        // 🚀 ОТПРАВКА ЗАЯВКИ ИЗ WEB APP В БОТА
         async function requestMovie(title, year, kind) {
             try {
                 const btn = document.getElementById('main-action-btn');
                 btn.innerHTML = '⏳ Подготовка...';
                 
-                // Генерируем короткий хэш для ссылки в бота
                 const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(title + ' ' + (year || ''))}&_t=${Date.now()}`);
                 const data = await res.json();
                 
@@ -534,8 +533,7 @@
             } catch(e) {
                 tg.showAlert("Ошибка: " + e.message);
             } finally {
-                const btn = document.getElementById('main-action-btn');
-                btn.innerHTML = `📩 Оставить заявку`;
+                document.getElementById('main-action-btn').innerHTML = `📩 Оставить заявку`;
             }
         }
 
@@ -543,7 +541,6 @@
             tg.close();
         }
 
-        // Запуск
         loadBasic();
     </script>
 </body>
