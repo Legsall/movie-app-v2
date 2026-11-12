@@ -59,6 +59,26 @@
         .section{margin-bottom:25px;}
         .fixed-bottom{position:fixed;bottom:0;left:0;right:0;padding:15px;background:linear-gradient(transparent,#101114 30%);}
         .btn-watch{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;display:flex;justify-content:center;align-items:center;gap:10px;box-shadow:0 4px 15px rgba(46,166,255,.4);cursor:pointer;}
+        
+        /* 🚀 СТИЛЬ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ" */
+        .btn-continue {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #2ea6ff 0%, #1e85d6 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(46, 166, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-continue:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -82,6 +102,15 @@
 
             <div class="badges" id="badges-container"></div>
 
+            <!-- 🚀 КНОПКА "ПРОДОЛЖИТЬ" -->
+            <div id="continue-section" style="display: none; margin-bottom: 15px;">
+                <button id="continue-btn" class="btn-continue" onclick="continueWatching()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span id="continue-text">Продолжить просмотр</span>
+                </button>
+            </div>
+
+            <!-- 🚀 ПЛАШКА "НЕТ В БАЗЕ" -->
             <div id="not-in-base" class="info-box" style="display:none;border:1px solid #ff5252;">
                 ❌ <b>Этого фильма нет в нашей базе.</b><br>
                 <span style="color:var(--hint);font-size:13px;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
@@ -151,7 +180,6 @@
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
         
-        // 🚀 Читаем API и имя бота из URL. Если их нет — берем дефолтные.
         const API_URL = urlParams.get('api') || "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
         let botUsername = urlParams.get('bot') || "katxlog_bot";
         
@@ -160,8 +188,8 @@
         let isInWatchlist = false;
         let isMuted = false;
         let currentTmdb = null;
+        let progressData = null;
 
-        // 🚀 1. ДАННЫЕ ДЛЯ ПРЯМОГО ЗАПРОСА К TMDB
         const TMDB_KEY = "ca153f9966020e101edec817d9a01699";
         const RU_COUNTRIES = {
             US:"США", GB:"Великобритания", RU:"Россия", FR:"Франция", DE:"Германия", IT:"Италия",
@@ -221,7 +249,6 @@
             };
         }
 
-        // ===== ЗАГРУЗКА БАЗОВОЙ ИНФЫ =====
         async function loadBasic() {
             try {
                 const res = await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}&_t=${Date.now()}`);
@@ -264,6 +291,15 @@
                 
                 updateWatchlistUI();
                 updateNotifyUI();
+
+                // 🚀 ОТОБРАЖАЕМ КНОПКУ "ПРОДОЛЖИТЬ" (если это сериал и есть прогресс)
+                if (data.progress && type === 'series') {
+                    progressData = data.progress;
+                    document.getElementById('continue-text').textContent = `Продолжить (Сезон ${progressData.season}, Серия ${progressData.episode})`;
+                    document.getElementById('continue-section').style.display = 'block';
+                } else {
+                    document.getElementById('continue-section').style.display = 'none';
+                }
 
                 document.getElementById('action-row').style.display = 'flex';
                 document.getElementById('not-in-base').style.display = 'none';
@@ -442,11 +478,21 @@
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
         }
 
+        // 🚀 ФУНКЦИЯ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ"
+        function continueWatching() {
+            if (!progressData) return;
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+            
+            // Отправляем в бота команду play_ (бот сам подтянет последнюю серию)
+            const startParam = `play_${rowIndex}`;
+            tg.openTelegramLink(`https://t.me/${botUsername}?start=${startParam}`);
+            setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+        }
+
         function openSimilar(id, kind, localRow, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch (e) {}
             if (localRow && localRow > 0) {
                 const newType = kind === 'm' ? 'movie' : 'series';
-                // 🚀 СОХРАНЯЕМ ПАРАМЕТРЫ БОТА И API ПРИ ПЕРЕЗАГРУЗКЕ
                 window.location.search = `?rowIndex=${localRow}&type=${newType}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
             } else {
                 loadTmdbCard(id, kind, title, year);
@@ -475,7 +521,7 @@
             document.getElementById('country').innerHTML = "—";
             document.getElementById('genres').textContent = "—";
             ['director-row', 'cast-row', 'companies-row'].forEach(i => document.getElementById(i).style.display = 'none');
-            ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container']
+            ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container', 'continue-section']
                 .forEach(i => document.getElementById(i).style.display = 'none');
             document.getElementById('trailer-iframe').src = '';
             document.getElementById('action-row').style.display = 'none';
@@ -560,8 +606,6 @@
             showRequestButton();
         }
 
-        // 🚀 ОТПРАВКА ЗАЯВКИ
-              // 🚀 ОТПРАВКА ЗАЯВКИ (ОТКРЫВАЕТ ТОГО ЖЕ БОТА)
         async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
@@ -573,11 +617,7 @@
 
             // Передаем TMDB ID напрямую (rqm_ID для фильма, rqt_ID для сериала)
             const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
-            
-            // 🚀 ВОТ ЗДЕСЬ ИСПОЛЬЗУЕТСЯ botUsername (текущий бот)
             tg.openTelegramLink(`https://t.me/${botUsername}?start=${prefix}_${c.id}`);
-            
-            // Сворачиваем Web App
             setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
