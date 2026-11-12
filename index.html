@@ -82,7 +82,6 @@
 
             <div class="badges" id="badges-container"></div>
 
-            <!-- 🚀 ПЛАШКА "НЕТ В БАЗЕ" -->
             <div id="not-in-base" class="info-box" style="display:none;border:1px solid #ff5252;">
                 ❌ <b>Этого фильма нет в нашей базе.</b><br>
                 <span style="color:var(--hint);font-size:13px;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
@@ -148,7 +147,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-               const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
         
@@ -160,7 +159,6 @@
 
         let isInWatchlist = false;
         let isMuted = false;
-        let botUsername = "katxlog_bot";
         let currentTmdb = null;
 
         // 🚀 1. ДАННЫЕ ДЛЯ ПРЯМОГО ЗАПРОСА К TMDB
@@ -223,22 +221,6 @@
             };
         }
 
-        // 🚀 ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ АКТУАЛЬНОГО ИМЕНИ БОТА (чтобы не кидало на тест)
-        async function getBotName() {
-            if (botUsername && botUsername !== "katxlog_bot" && botUsername !== "undefined") return botUsername;
-            try {
-                const res = await fetch(`${API_URL}?action=get_bot&_t=${Date.now()}`);
-                const data = await res.json();
-                if (data.ok && data.botUsername) {
-                    botUsername = data.botUsername;
-                    return botUsername;
-                }
-            } catch (e) {
-                console.warn("Не удалось получить имя бота:", e);
-            }
-            return botUsername || "katxlog_bot";
-        }
-
         // ===== ЗАГРУЗКА БАЗОВОЙ ИНФЫ =====
         async function loadBasic() {
             try {
@@ -277,10 +259,6 @@
                     }
                 }
 
-                // 🚀 Не перезаписываем имя бота, если оно уже пришло из URL
-if (!urlParams.get('bot') && data.botUsername) {
-    botUsername = data.botUsername;
-}
                 isInWatchlist = !!data.inWatchlist;
                 isMuted = !!data.isMuted;
                 
@@ -444,41 +422,32 @@ if (!urlParams.get('bot') && data.botUsername) {
         async function shareLink() {
             try {
                 try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
-                const bot = await getBotName();
                 let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
-                let botLink = `https://t.me/${bot}?start=${startParam}`;
+                let botLink = `https://t.me/${botUsername}?start=${startParam}`;
                 let title = document.getElementById('title').textContent;
                 tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`);
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
         }
 
-        // 🚀 КНОПКА "СМОТРЕТЬ В БОТЕ"
-        async function openInBot() {
+        function openInBot() {
             try {
-                const bot = await getBotName();
-
                 if (!rowIndex) {
-                    tg.openTelegramLink(`https://t.me/${bot}`);
+                    tg.openTelegramLink(`https://t.me/${botUsername}`);
                     setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
                     return;
                 }
-
                 let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
-                let url = `https://t.me/${bot}?start=${startParam}`;
-                
-                tg.openTelegramLink(url);
+                tg.openTelegramLink(`https://t.me/${botUsername}?start=${startParam}`);
                 setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
-
-            } catch (e) { 
-                tg.showAlert("Ошибка: " + e.message); 
-            }
+            } catch (e) { tg.showAlert("Ошибка: " + e.message); }
         }
 
         function openSimilar(id, kind, localRow, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch (e) {}
             if (localRow && localRow > 0) {
                 const newType = kind === 'm' ? 'movie' : 'series';
-                window.location.search = `?rowIndex=${localRow}&type=${newType}`;
+                // 🚀 СОХРАНЯЕМ ПАРАМЕТРЫ БОТА И API ПРИ ПЕРЕЗАГРУЗКЕ
+                window.location.search = `?rowIndex=${localRow}&type=${newType}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
             } else {
                 loadTmdbCard(id, kind, title, year);
             }
@@ -518,25 +487,21 @@ if (!urlParams.get('bot') && data.botUsername) {
 
             try {
                 let data = null;
-                // 🚀 СНАЧАЛА ПРОБУЕМ НАПРЯМУЮ ИЗ TMDB (БЫСТРО И НАДЕЖНО)
                 try { data = await fetchTmdbDirect(id, kind); } 
                 catch (e1) { console.warn("TMDB direct:", e1); }
 
-                // Если прямой запрос не удался, идем через Apps Script (запасной вариант)
                 if (!data) {
                     const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
                     data = JSON.parse(await res.text());
                     if (data.ok && data.inBase) {
-                        window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}`;
+                        window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
                         return;
                     }
                 }
 
                 if (!data || !data.ok) throw new Error((data && data.error) || "Нет данных");
-
-                // Если оказалось, что фильм есть в базе — перекидываем
                 if (data.inBase) {
-                    window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}`;
+                    window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
                     return;
                 }
 
@@ -595,7 +560,7 @@ if (!urlParams.get('bot') && data.botUsername) {
             showRequestButton();
         }
 
-        // 🚀 ОТПРАВКА ЗАЯВКИ (ОПРЕДЕЛЯЕТ БОТА АВТОМАТИЧЕСКИ)
+        // 🚀 ОТПРАВКА ЗАЯВКИ
         async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
@@ -605,13 +570,9 @@ if (!urlParams.get('bot') && data.botUsername) {
             const btn = document.getElementById('main-action-btn');
             btn.innerHTML = '⏳ Подготовка...';
 
-            const bot = await getBotName();
+            // Передаем TMDB ID напрямую (rqm_ID для фильма, rqt_ID для сериала)
             const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
-
-            // Открываем бота и передаем TMDB ID (rqm_123 или rqt_456)
-            tg.openTelegramLink(`https://t.me/${bot}?start=${prefix}_${c.id}`);
-
-            // Сворачиваем Web App
+            tg.openTelegramLink(`https://t.me/${botUsername}?start=${prefix}_${c.id}`);
             setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
