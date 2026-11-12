@@ -73,7 +73,7 @@
     </div>
 
     <div id="app-content">
-        <img id="poster" class="poster" src="" alt="Постер">
+        <img id="poster" class="poster" src="" alt="Постер" style="display:none;">
         
         <div class="content">
             <div class="title-row"><div id="title" class="title"></div></div>
@@ -82,7 +82,6 @@
 
             <div class="badges" id="badges-container"></div>
 
-            <!-- 🚀 ПЛАШКА "НЕТ В БАЗЕ" -->
             <div id="not-in-base" class="info-box" style="display:none;border:1px solid #ff5252;">
                 ❌ <b>Этого фильма нет в нашей базе.</b><br>
                 <span style="color:var(--hint);font-size:13px;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
@@ -157,7 +156,7 @@
         let isInWatchlist = false;
         let isMuted = false;
         let botUsername = "katxlog_bot";
-        let currentTmdb = null; // 🚀 Для хранения данных фильма из TMDB
+        let currentTmdb = null;
 
         async function loadBasic() {
             try {
@@ -167,7 +166,11 @@
                 if (!data.ok) throw new Error(data.error || "Unknown error");
 
                 document.title = data.title;
-                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
+                
+                const posterEl = document.getElementById('poster');
+                posterEl.src = data.poster || '';
+                posterEl.style.display = data.poster ? 'block' : 'none';
+                
                 document.getElementById('title').textContent = data.title;
                 
                 let badgesHtml = `<span class="badge">${type === 'movie' ? '🍿 Фильм' : '📺 Сериал'}</span>`;
@@ -378,7 +381,6 @@
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
         }
 
-        // 🚀 ОБНОВЛЕННАЯ ЛОГИКА ПОХОЖИХ
         function openSimilar(id, kind, localRow, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch (e) {}
             if (localRow && localRow > 0) {
@@ -403,13 +405,17 @@
             document.getElementById('title').textContent = title;
             document.getElementById('originalTitle').textContent = '';
             document.getElementById('tagline').textContent = '';
+            
             document.getElementById('poster').src = '';
+            document.getElementById('poster').style.display = 'none';
+            
             document.getElementById('badges-container').innerHTML = `<span class="badge">⏳ Загрузка...</span>`;
             document.getElementById('description').textContent = 'Загрузка описания...';
             document.getElementById('description').style.display = 'block';
             document.getElementById('readMoreBtn').style.display = 'none';
             document.getElementById('country').innerHTML = "—";
             document.getElementById('genres').textContent = "—";
+            
             ['director-row', 'cast-row', 'companies-row'].forEach(i => document.getElementById(i).style.display = 'none');
             ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container']
                 .forEach(i => document.getElementById(i).style.display = 'none');
@@ -436,7 +442,11 @@
                 currentTmdb.countryRaw = data.countryRaw || "";
 
                 document.title = currentTmdb.title;
-                document.getElementById('poster').src = data.poster || '';
+                
+                const posterEl = document.getElementById('poster');
+                posterEl.src = data.poster || '';
+                posterEl.style.display = data.poster ? 'block' : 'none';
+
                 document.getElementById('title').textContent = currentTmdb.title;
                 document.getElementById('originalTitle').textContent = data.originalTitle || '';
                 document.getElementById('tagline').textContent = data.tagline ? `«${data.tagline}»` : '';
@@ -472,33 +482,18 @@
                 }
             } catch (e) {
                 console.error("loadTmdbCard:", e);
-                document.getElementById('badges-container').innerHTML =
-                    `<span class="badge">${kind === 'm' ? '🍿 Фильм' : '📺 Сериал'}</span>` +
-                    (year ? `<span class="badge">📅 ${year}</span>` : '') +
-                    `<span class="badge red">❌ Нет в базе</span>`;
-                document.getElementById('description').textContent = 'Подробности временно недоступны, но вы можете оставить заявку.';
+                document.getElementById('description').textContent = 'Не удалось загрузить данные (' + e.message + '). Но вы можете оставить заявку.';
             }
             showRequestButton();
         }
 
-        async function requestMovie() {
+        function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
-            const btn = document.getElementById('main-action-btn');
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Подготовка...';
-            try {
-                const q = JSON.stringify({ name: c.title, year: c.year || "", country: c.countryRaw || "" });
-                const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(q)}&_t=${Date.now()}`);
-                const data = JSON.parse(await res.text());
-                if (!(data.ok && data.id)) throw new Error("Не удалось сохранить запрос");
-                const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
-                tg.openTelegramLink(`https://t.me/${bot}?start=${c.kind === 'm' ? 'reqm' : 'reqs'}_${data.id}`);
-            } catch (e) {
-                tg.showAlert("Ошибка: " + e.message);
-            } finally {
-                showRequestButton();
-            }
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+            const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+            const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
+            tg.openTelegramLink(`https://t.me/${bot}?start=${prefix}_${c.id}`);
         }
 
         function closeApp() { tg.close(); }
