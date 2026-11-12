@@ -430,13 +430,29 @@
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
         }
 
-        function openInBot() {
+              function openInBot() {
             try {
                 let cleanBotName = String(botUsername).replace('@', '').trim();
                 if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
+                
+                // Если rowIndex нет (например, открыли Web App без карточки)
+                if (!rowIndex) {
+                    tg.openTelegramLink(`https://t.me/${cleanBotName}`);
+                    setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+                    return;
+                }
+
                 let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
-                tg.openTelegramLink(`https://t.me/${cleanBotName}?start=${startParam}`);
-            } catch (e) { tg.showAlert("Ошибка: " + e.message); }
+                let url = `https://t.me/${cleanBotName}?start=${startParam}`;
+                
+                tg.openTelegramLink(url);
+                
+                // 🚀 ВАЖНО: Закрываем Web App, чтобы Telegram переключился на бота
+                setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+
+            } catch (e) { 
+                tg.showAlert("Ошибка: " + e.message); 
+            }
         }
 
         function openSimilar(id, kind, localRow, title, year) {
