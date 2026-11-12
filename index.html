@@ -73,7 +73,7 @@
     </div>
 
     <div id="app-content">
-        <img id="poster" class="poster" src="" alt="Постер" style="display:none;">
+        <img id="poster" class="poster" src="" alt="Постер">
         
         <div class="content">
             <div class="title-row"><div id="title" class="title"></div></div>
@@ -82,6 +82,7 @@
 
             <div class="badges" id="badges-container"></div>
 
+            <!-- 🚀 ПЛАШКА "НЕТ В БАЗЕ" -->
             <div id="not-in-base" class="info-box" style="display:none;border:1px solid #ff5252;">
                 ❌ <b>Этого фильма нет в нашей базе.</b><br>
                 <span style="color:var(--hint);font-size:13px;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
@@ -158,6 +159,67 @@
         let botUsername = "katxlog_bot";
         let currentTmdb = null;
 
+        // 🚀 1. ДАННЫЕ ДЛЯ ПРЯМОГО ЗАПРОСА К TMDB (от Claude AI)
+        const TMDB_KEY = "ca153f9966020e101edec817d9a01699";
+        const RU_COUNTRIES = {
+            US:"США", GB:"Великобритания", RU:"Россия", FR:"Франция", DE:"Германия", IT:"Италия",
+            ES:"Испания", CA:"Канада", AU:"Австралия", JP:"Япония", KR:"Южная Корея", CN:"Китай",
+            IN:"Индия", BR:"Бразилия", MX:"Мексика", TR:"Турция", UA:"Украина", BY:"Беларусь",
+            KZ:"Казахстан", UZ:"Узбекистан", PL:"Польша", CZ:"Чехия", SE:"Швеция", NO:"Норвегия",
+            DK:"Дания", FI:"Финляндия", NL:"Нидерланды", BE:"Бельгия", CH:"Швейцария", AT:"Австрия",
+            IE:"Ирландия", PT:"Португалия", GR:"Греция", IL:"Израиль", TH:"Таиланд", NZ:"Новая Зеландия",
+            HK:"Гонконг", TW:"Тайвань", AR:"Аргентина", ZA:"ЮАР", HU:"Венгрия", RO:"Румыния"
+        };
+
+        function flagEmoji(iso) {
+            return String(iso).toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+        }
+
+        async function fetchTmdbDirect(id, kind) {
+            const k = kind === 'm' ? 'movie' : 'tv';
+            const base = `https://api.themoviedb.org/3/${k}/${id}?api_key=${TMDB_KEY}`;
+            const r = await fetch(base + "&language=ru-RU&append_to_response=videos,credits&include_video_language=ru,en,null");
+            const t = await r.json();
+            if (!t || !t.id) throw new Error(t && t.status_message ? t.status_message : "TMDB: нет данных");
+
+            let description = t.overview || "";
+            if (!description) {
+                try { description = (await (await fetch(base + "&language=en-US")).json()).overview || ""; } catch (e) {}
+            }
+
+            let isoList = (t.production_countries || []).map(c => c.iso_3166_1);
+            if (!isoList.length) isoList = t.origin_country || [];
+            const country = isoList.map(iso => flagEmoji(iso) + " " + (RU_COUNTRIES[iso] || iso)).join(", ");
+
+            const vid = ((t.videos && t.videos.results) || [])
+                .find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
+
+            const crew = (t.credits && t.credits.crew) || [];
+            const cast = ((t.credits && t.credits.cast) || []).slice(0, 10).map(c => c.name).join(", ");
+            const director = k === 'movie'
+                ? ((crew.find(c => c.job === "Director") || {}).name || "")
+                : (t.created_by || []).map(c => c.name).join(", ");
+
+            return {
+                ok: true,
+                title: t.title || t.name || "",
+                originalTitle: t.original_title || t.original_name || "",
+                tagline: t.tagline || "",
+                year: (t.release_date || t.first_air_date || "").substring(0, 4),
+                poster: t.poster_path ? "https://image.tmdb.org/t/p/w500" + t.poster_path : "",
+                country: country,
+                countryRaw: isoList.map(iso => RU_COUNTRIES[iso] || iso).join(", "),
+                genres: (t.genres || []).map(g => g.name).join(", "),
+                description: description,
+                trailer: vid ? "https://www.youtube.com/watch?v=" + vid.key : "",
+                ratingTMDB: t.vote_average ? String(Math.round(t.vote_average * 10) / 10) : "",
+                ratingKP: "",
+                cast: cast,
+                director: director
+            };
+        }
+
+        // ===== ЗАГРУЗКА БАЗОВОЙ ИНФЫ =====
         async function loadBasic() {
             try {
                 const res = await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}&_t=${Date.now()}`);
@@ -166,11 +228,7 @@
                 if (!data.ok) throw new Error(data.error || "Unknown error");
 
                 document.title = data.title;
-                
-                const posterEl = document.getElementById('poster');
-                posterEl.src = data.poster || '';
-                posterEl.style.display = data.poster ? 'block' : 'none';
-                
+                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
                 document.getElementById('title').textContent = data.title;
                 
                 let badgesHtml = `<span class="badge">${type === 'movie' ? '🍿 Фильм' : '📺 Сериал'}</span>`;
@@ -405,17 +463,13 @@
             document.getElementById('title').textContent = title;
             document.getElementById('originalTitle').textContent = '';
             document.getElementById('tagline').textContent = '';
-            
             document.getElementById('poster').src = '';
-            document.getElementById('poster').style.display = 'none';
-            
             document.getElementById('badges-container').innerHTML = `<span class="badge">⏳ Загрузка...</span>`;
             document.getElementById('description').textContent = 'Загрузка описания...';
             document.getElementById('description').style.display = 'block';
             document.getElementById('readMoreBtn').style.display = 'none';
             document.getElementById('country').innerHTML = "—";
             document.getElementById('genres').textContent = "—";
-            
             ['director-row', 'cast-row', 'companies-row'].forEach(i => document.getElementById(i).style.display = 'none');
             ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container']
                 .forEach(i => document.getElementById(i).style.display = 'none');
@@ -428,14 +482,28 @@
             bottomBtn.disabled = true;
 
             try {
-                const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
-                const data = JSON.parse(await res.text());
+                let data = null;
+                // 🚀 СНАЧАЛА ПРОБУЕМ НАПРЯМУЮ ИЗ TMDB (БЫСТРО И НАДЕЖНО)
+                try { data = await fetchTmdbDirect(id, kind); } 
+                catch (e1) { console.warn("TMDB direct:", e1); }
 
-                if (data.ok && data.inBase) {
+                // Если прямой запрос не удался, идем через Apps Script (запасной вариант)
+                if (!data) {
+                    const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
+                    data = JSON.parse(await res.text());
+                    if (data.ok && data.inBase) {
+                        window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}`;
+                        return;
+                    }
+                }
+
+                if (!data || !data.ok) throw new Error((data && data.error) || "Нет данных");
+
+                // Если оказалось, что фильм есть в базе — перекидываем
+                if (data.inBase) {
                     window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}`;
                     return;
                 }
-                if (!data.ok) throw new Error(data.error || "Нет данных");
 
                 currentTmdb.title = data.title || title;
                 currentTmdb.year = data.year || year;
@@ -444,8 +512,8 @@
                 document.title = currentTmdb.title;
                 
                 const posterEl = document.getElementById('poster');
-                posterEl.src = data.poster || '';
                 posterEl.style.display = data.poster ? 'block' : 'none';
+                posterEl.src = data.poster || '';
 
                 document.getElementById('title').textContent = currentTmdb.title;
                 document.getElementById('originalTitle').textContent = data.originalTitle || '';
@@ -460,6 +528,7 @@
 
                 document.getElementById('country').innerHTML = data.country || "—";
                 document.getElementById('genres').textContent = data.genres || "—";
+                
                 if (data.director) { document.getElementById('director').textContent = data.director; document.getElementById('director-row').style.display = 'flex'; }
                 if (data.cast) { document.getElementById('cast').textContent = data.cast; document.getElementById('cast-row').style.display = 'flex'; }
 
@@ -470,7 +539,7 @@
                     document.getElementById('readMoreBtn').textContent = 'Читать далее';
                     document.getElementById('readMoreBtn').style.display = 'inline-block';
                 } else {
-                    document.getElementById('description').style.display = 'none';
+                    document.getElementById('description').textContent = 'Описание пока отсутствует.';
                 }
 
                 if (data.trailer) {
@@ -482,18 +551,38 @@
                 }
             } catch (e) {
                 console.error("loadTmdbCard:", e);
-                document.getElementById('description').textContent = 'Не удалось загрузить данные (' + e.message + '). Но вы можете оставить заявку.';
+                document.getElementById('badges-container').innerHTML =
+                    `<span class="badge">${kind === 'm' ? '🍿 Фильм' : '📺 Сериал'}</span>` +
+                    (year ? `<span class="badge">📅 ${year}</span>` : '') +
+                    `<span class="badge red">❌ Нет в базе</span>`;
+                document.getElementById('description').textContent = 'Не удалось загрузить данные (' + e.message + '). Вы всё равно можете оставить заявку.';
             }
             showRequestButton();
         }
 
-        function requestMovie() {
+        async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
-            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
-            const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
-            const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
-            tg.openTelegramLink(`https://t.me/${bot}?start=${prefix}_${c.id}`);
+            const btn = document.getElementById('main-action-btn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Подготовка...';
+            try {
+                const q = JSON.stringify({ name: c.title, year: c.year || "", country: c.countryRaw || "" });
+                const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(q)}&_t=${Date.now()}`);
+                const data = JSON.parse(await res.text());
+                if (!(data.ok && data.id)) throw new Error("Не удалось сохранить запрос");
+                
+                const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+                tg.openTelegramLink(`https://t.me/${bot}?start=${c.kind === 'm' ? 'reqm' : 'reqs'}_${data.id}`);
+                
+                // 🚀 СВОРАЧИВАЕМ WEB APP ЧЕРЕЗ 0.5 СЕК
+                setTimeout(() => { tg.close(); }, 500);
+                
+            } catch (e) {
+                tg.showAlert("Ошибка: " + e.message);
+            } finally {
+                showRequestButton();
+            }
         }
 
         function closeApp() { tg.close(); }
