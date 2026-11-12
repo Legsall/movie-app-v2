@@ -82,7 +82,7 @@
 
             <div class="badges" id="badges-container"></div>
 
-            <div class="action-row">
+            <div class="action-row" id="action-row">
                 <button class="btn btn-secondary" onclick="shareLink()">📤 Поделиться</button>
                 <button id="watchlist-btn" class="btn btn-toggle" onclick="toggleWatchlist()">📌 В список</button>
                 <button id="notify-btn" class="btn btn-toggle" onclick="toggleNotify()">🔔 Уведомления</button>
@@ -131,7 +131,7 @@
         </div>
 
         <div class="fixed-bottom" style="z-index: 9999;">
-            <button type="button" class="btn-watch" onclick="openInBot()">
+            <button type="button" id="main-action-btn" class="btn-watch" onclick="openInBot()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 Смотреть в боте
             </button>
@@ -175,6 +175,8 @@
                 
                 if (data.description) {
                     document.getElementById('description').textContent = data.description;
+                    document.getElementById('description').style.display = 'block';
+                    document.getElementById('readMoreBtn').style.display = 'inline-block';
                 } else {
                     document.getElementById('description').style.display = 'none';
                     document.getElementById('readMoreBtn').style.display = 'none';
@@ -190,10 +192,16 @@
 
                 botUsername = data.botUsername || "katxlog_bot";
                 isInWatchlist = !!data.inWatchlist;
-                isMuted = !!data.isMuted;          // ← ВАЖНО: подтягиваем из API
+                isMuted = !!data.isMuted;
                 
                 updateWatchlistUI();
-                updateNotifyUI();                   // ← ВАЖНО: применяем состояние
+                updateNotifyUI();
+
+                // Возвращаем стандартные кнопки и кнопку внизу (на случай, если перешли с "нет в базе")
+                document.getElementById('action-row').style.display = 'flex';
+                const bottomBtn = document.getElementById('main-action-btn');
+                bottomBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Смотреть в боте`;
+                bottomBtn.onclick = openInBot;
 
                 document.getElementById('skeleton-loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -266,7 +274,6 @@
                     ).join('');
                 }
 
-                // 🚀 ПОХОЖИЕ — передаём rowIndex в onclick (если он есть в d.similar — см. Code.gs)
                 if (d.similar && d.similar.length > 0) {
                     document.getElementById('similar-section').style.display = 'block';
                     document.getElementById('similar').innerHTML = d.similar.map(m => {
@@ -319,20 +326,14 @@
             }
         }
 
-        // 🚀 Кнопка "В список"
         async function toggleWatchlist() {
             const btn = document.getElementById('watchlist-btn');
-            
             if (!userId || userId === "0" || userId === 0) {
                 tg.showAlert("❌ Не удалось определить ваш Telegram ID.\n\nОткройте приложение через бота (кнопка «Подробнее»).");
                 return;
             }
-
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            try {
-                tg.HapticFeedback?.impactOccurred('light');
-            } catch(e) {}
+            btn.disabled = true; btn.style.opacity = '0.5';
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
 
             try {
                 const newState = !isInWatchlist ? 1 : 0;
@@ -340,38 +341,28 @@
                 const res = await fetch(url);
                 const text = await res.text();
                 let data;
-                try { data = JSON.parse(text); }
-                catch(e) { throw new Error("Сервер вернул не JSON. Возможно Web App развернут не для всех."); }
+                try { data = JSON.parse(text); } catch(e) { throw new Error("Сервер вернул не JSON."); }
 
                 if (data.ok) {
                     isInWatchlist = !!data.inWatchlist;
                     updateWatchlistUI();
-                    try {
-                        tg.HapticFeedback?.notificationOccurred(isInWatchlist ? 'success' : 'warning');
-                    } catch(e) {}
-                } else {
-                    throw new Error(data.error || "Неизвестная ошибка");
-                }
+                    try { tg.HapticFeedback?.notificationOccurred(isInWatchlist ? 'success' : 'warning'); } catch(e) {}
+                } else { throw new Error(data.error || "Неизвестная ошибка"); }
             } catch (e) {
                 console.error("toggleWatchlist:", e);
                 tg.showAlert("❌ Ошибка: " + e.message);
             } finally {
-                btn.disabled = false;
-                btn.style.opacity = '1';
+                btn.disabled = false; btn.style.opacity = '1';
             }
         }
 
-        // 🚀 Кнопка "Уведомления"
         async function toggleNotify() {
             const btn = document.getElementById('notify-btn');
-            
             if (!userId || userId === "0" || userId === 0) {
                 tg.showAlert("❌ Не удалось определить ваш Telegram ID.\n\nОткройте приложение через бота (кнопка «Подробнее»).");
                 return;
             }
-
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
+            btn.disabled = true; btn.style.opacity = '0.5';
             try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
 
             try {
@@ -380,22 +371,18 @@
                 const res = await fetch(url);
                 const text = await res.text();
                 let data;
-                try { data = JSON.parse(text); }
-                catch(e) { throw new Error("Сервер вернул не JSON."); }
+                try { data = JSON.parse(text); } catch(e) { throw new Error("Сервер вернул не JSON."); }
 
                 if (data.ok) {
                     isMuted = !!data.muted;
                     updateNotifyUI();
                     try { tg.HapticFeedback?.notificationOccurred('success'); } catch(e) {}
-                } else {
-                    throw new Error(data.error || "Неизвестная ошибка");
-                }
+                } else { throw new Error(data.error || "Неизвестная ошибка"); }
             } catch (e) {
                 console.error("toggleNotify:", e);
                 tg.showAlert("❌ Ошибка: " + e.message);
             } finally {
-                btn.disabled = false;
-                btn.style.opacity = '1';
+                btn.disabled = false; btn.style.opacity = '1';
             }
         }
 
@@ -415,29 +402,127 @@
                 if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
                 let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
                 let url = `https://t.me/${cleanBotName}?start=${startParam}`;
-                console.log("Открываю ссылку: " + url);
                 tg.openTelegramLink(url);
             } catch (e) {
                 tg.showAlert("Не удалось открыть бота: " + e.message);
             }
         }
 
-        // 🚀 ПОХОЖИЕ — открываем карточку (если есть rowIndex) или ведём в бота
+        // 🚀 ОБНОВЛЕННАЯ ФУНКЦИЯ КЛИКА ПО ПОХОЖИМ
         function openSimilar(id, kind, rowIndex, title, year) {
+            try { tg.HapticFeedback?.selectionChanged(); } catch(e) {}
+            
             if (rowIndex && rowIndex > 0) {
-                // Есть в нашей базе — переходим на карточку
+                // Если фильм ЕСТЬ в базе — перезагружаем Web App на него
                 const newType = kind === 'm' ? 'movie' : 'series';
-                try { tg.HapticFeedback?.selectionChanged(); } catch(e) {}
                 window.location.search = `?rowIndex=${rowIndex}&type=${newType}`;
             } else {
-                // Нет в базе — предлагаем оставить заявку
-                const msg = `❌ «${title}»${year ? ' (' + year + ')' : ''} нет в нашей базе.\n\n💡 Напишите название боту, чтобы оставить заявку на добавление.`;
-                tg.showAlert(msg, () => {
-                    try {
-                        const cleanBotName = String(botUsername).replace('@', '').trim() || "katxlog_bot";
-                        tg.openTelegramLink(`https://t.me/${cleanBotName}`);
-                    } catch(e) {}
-                });
+                // Если НЕТ в базе — грузим карточку из TMDB
+                loadTmdbCard(id, kind, title, year);
+            }
+        }
+
+        // 🚀 ЗАГРУЗКА КАРТОЧКИ ИЗ TMDB (когда нет в базе)
+        async function loadTmdbCard(id, kind, title, year) {
+            try {
+                // Сразу меняем UI на состояние загрузки
+                window.scrollTo(0, 0);
+                document.getElementById('title').textContent = title;
+                document.getElementById('originalTitle').textContent = '';
+                document.getElementById('tagline').textContent = '';
+                document.getElementById('poster').src = 'https://via.placeholder.com/500x750?text=Loading...';
+                document.getElementById('badges-container').innerHTML = `<span class="badge">⏳ Загрузка данных...</span>`;
+                document.getElementById('description').textContent = 'Загрузка описания...';
+                
+                // Прячем лишнее
+                document.getElementById('director-row').style.display = 'none';
+                document.getElementById('cast-row').style.display = 'none';
+                document.getElementById('companies-row').style.display = 'none';
+                document.getElementById('trailer-section').style.display = 'none';
+                document.getElementById('backdrops-section').style.display = 'none';
+                document.getElementById('seasons-section').style.display = 'none';
+                document.getElementById('similar-section').style.display = 'none';
+                document.getElementById('providers-container').style.display = 'none';
+                document.getElementById('action-row').style.display = 'none'; // Прячем кнопки "В список" и "Уведомления"
+                
+                // Меняем нижнюю кнопку на "Загрузка"
+                const bottomBtn = document.getElementById('main-action-btn');
+                bottomBtn.innerHTML = '⏳ Загрузка...';
+                bottomBtn.onclick = null;
+
+                // Запрашиваем данные по ID из TMDB
+                const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${id}&kind=${kind}&_t=${Date.now()}`);
+                const data = await res.json();
+                
+                if (data.ok) {
+                    document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
+                    document.getElementById('title').textContent = data.title;
+                    document.getElementById('originalTitle').textContent = data.originalTitle || '';
+                    document.getElementById('tagline').textContent = data.tagline ? `«${data.tagline}»` : '';
+                    
+                    let badgesHtml = `<span class="badge">${kind === 'm' ? '🍿 Фильм' : '📺 Сериал'}</span>`;
+                    if (data.year) badgesHtml += `<span class="badge">📅 ${data.year}</span>`;
+                    if (data.ratingTMDB) badgesHtml += `<span class="badge gold">⭐ TMDB: ${data.ratingTMDB}</span>`;
+                    badgesHtml += `<span class="badge red">❌ Нет в базе</span>`;
+                    document.getElementById('badges-container').innerHTML = badgesHtml;
+
+                    document.getElementById('country').innerHTML = data.country || "—";
+                    document.getElementById('genres').textContent = data.genres || "—";
+                    
+                    if (data.description) {
+                        document.getElementById('description').textContent = data.description;
+                        document.getElementById('description').style.display = 'block';
+                        document.getElementById('readMoreBtn').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('description').style.display = 'none';
+                        document.getElementById('readMoreBtn').style.display = 'none';
+                    }
+
+                    if (data.trailer) {
+                        document.getElementById('trailer-section').style.display = 'block';
+                        const vidId = data.trailer.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&]{11})/);
+                        if (vidId && vidId[1]) {
+                            document.getElementById('trailer-iframe').src = `https://www.youtube.com/embed/${vidId[1]}`;
+                        }
+                    }
+
+                    // 🚀 МЕНЯЕМ НИЖНЮЮ КНОПКУ НА "ОСТАВИТЬ ЗАЯВКУ"
+                    bottomBtn.innerHTML = `📩 Оставить заявку`;
+                    bottomBtn.style.background = 'var(--accent)';
+                    bottomBtn.onclick = () => requestMovie(data.title, data.year, kind);
+                } else {
+                    tg.showAlert("Ошибка загрузки данных из TMDB");
+                    bottomBtn.innerHTML = 'Ошибка загрузки';
+                }
+            } catch(e) {
+                console.error("loadTmdbCard error:", e);
+                tg.showAlert("Ошибка: " + e.message);
+            }
+        }
+
+        // 🚀 ОТПРАВКА ЗАЯВКИ ИЗ WEB APP В БОТА
+        async function requestMovie(title, year, kind) {
+            try {
+                const btn = document.getElementById('main-action-btn');
+                btn.innerHTML = '⏳ Подготовка...';
+                
+                // Генерируем короткий хэш для ссылки в бота
+                const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(title + ' ' + (year || ''))}&_t=${Date.now()}`);
+                const data = await res.json();
+                
+                if (data.ok && data.id) {
+                    let cleanBotName = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+                    let prefix = kind === 'm' ? 'reqm' : 'reqs';
+                    let url = `https://t.me/${cleanBotName}?start=${prefix}_${data.id}`;
+                    tg.openTelegramLink(url);
+                } else {
+                    throw new Error("Не удалось сохранить запрос");
+                }
+            } catch(e) {
+                tg.showAlert("Ошибка: " + e.message);
+            } finally {
+                const btn = document.getElementById('main-action-btn');
+                btn.innerHTML = `📩 Оставить заявку`;
             }
         }
 
