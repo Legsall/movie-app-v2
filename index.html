@@ -560,33 +560,22 @@
             showRequestButton();
         }
 
-               async function requestMovie() {
+                      async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
-            const btn = document.getElementById('main-action-btn');
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Подготовка...';
             
-            try {
-                const q = JSON.stringify({ name: c.title, year: c.year || "", country: c.countryRaw || "" });
-                
-                // 🚀 ДОБАВЛЯЕМ СЛУЧАЙНЫЙ ПАРАМЕТР, ЧТОБЫ БРАУЗЕР НЕ КЭШИРОВАЛ ЗАПРОС
-                const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(q)}&_t=${Date.now()}`);
-                const resText = await res.text();
-                
-                let data;
-                try { data = JSON.parse(resText); } 
-                catch (e) { throw new Error("Ответ сервера не JSON: " + resText.substring(0, 50)); }
-                
-                if (!(data.ok && data.id)) {
-                    throw new Error("Сервер: " + (data.error || "Не удалось получить ID"));
-                }
-                
-                const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
-                tg.openTelegramLink(`https://t.me/${bot}?start=${c.kind === 'm' ? 'reqm' : 'reqs'}_${data.id}`);
-                
-                // 🚀 АВТОМАТИЧЕСКИ СВОРАЧИВАЕМ WEB APP (через 0.5 сек, чтобы ссылка успела открыться)
-                setTimeout(() => { tg.close(); }, 500);
+            // Виброотклик при нажатии
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+
+            const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+            const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
+
+            // Открываем бота и передаем TMDB ID (rqm_123 или rqt_456)
+            tg.openTelegramLink(`https://t.me/${bot}?start=${prefix}_${c.id}`);
+
+            // Сворачиваем Web App через 0.4 секунды
+            setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+        }
                 
             } catch (e) {
                 tg.showAlert("Ошибка: " + e.message);
