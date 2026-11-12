@@ -151,7 +151,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
-        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec"; // Убедитесь, что здесь правильная ссылка
         const userId = tg.initDataUnsafe?.user?.id || urlParams.get('uid') || "0";
 
         let isInWatchlist = false;
@@ -217,6 +217,22 @@
                 cast: cast,
                 director: director
             };
+        }
+
+        // 🚀 ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ АКТУАЛЬНОГО ИМЕНИ БОТА (чтобы не кидало на тест)
+        async function getBotName() {
+            if (botUsername && botUsername !== "katxlog_bot" && botUsername !== "undefined") return botUsername;
+            try {
+                const res = await fetch(`${API_URL}?action=get_bot&_t=${Date.now()}`);
+                const data = await res.json();
+                if (data.ok && data.botUsername) {
+                    botUsername = data.botUsername;
+                    return botUsername;
+                }
+            } catch (e) {
+                console.warn("Не удалось получить имя бота:", e);
+            }
+            return botUsername || "katxlog_bot";
         }
 
         // ===== ЗАГРУЗКА БАЗОВОЙ ИНФЫ =====
@@ -418,36 +434,32 @@
             finally { btn.disabled = false; btn.style.opacity = '1'; }
         }
 
-        function shareLink() {
+        async function shareLink() {
             try {
                 try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
-                let cleanBotName = String(botUsername).replace('@', '').trim();
-                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
+                const bot = await getBotName();
                 let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
-                let botLink = `https://t.me/${cleanBotName}?start=${startParam}`;
+                let botLink = `https://t.me/${bot}?start=${startParam}`;
                 let title = document.getElementById('title').textContent;
                 tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`);
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
         }
 
-              function openInBot() {
+        // 🚀 КНОПКА "СМОТРЕТЬ В БОТЕ"
+        async function openInBot() {
             try {
-                let cleanBotName = String(botUsername).replace('@', '').trim();
-                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
-                
-                // Если rowIndex нет (например, открыли Web App без карточки)
+                const bot = await getBotName();
+
                 if (!rowIndex) {
-                    tg.openTelegramLink(`https://t.me/${cleanBotName}`);
+                    tg.openTelegramLink(`https://t.me/${bot}`);
                     setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
                     return;
                 }
 
                 let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
-                let url = `https://t.me/${cleanBotName}?start=${startParam}`;
+                let url = `https://t.me/${bot}?start=${startParam}`;
                 
                 tg.openTelegramLink(url);
-                
-                // 🚀 ВАЖНО: Закрываем Web App, чтобы Telegram переключился на бота
                 setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
 
             } catch (e) { 
@@ -576,20 +588,23 @@
             showRequestButton();
         }
 
-        // 🚀 ОТПРАВКА ЗАЯВКИ БЕЗ ЗАПРОСОВ К СЕРВЕРУ (ПЕРЕДАЧА ID В БОТА)
+        // 🚀 ОТПРАВКА ЗАЯВКИ (ОПРЕДЕЛЯЕТ БОТА АВТОМАТИЧЕСКИ)
         async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
             
             try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
 
-            const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+            const btn = document.getElementById('main-action-btn');
+            btn.innerHTML = '⏳ Подготовка...';
+
+            const bot = await getBotName();
             const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
 
             // Открываем бота и передаем TMDB ID (rqm_123 или rqt_456)
             tg.openTelegramLink(`https://t.me/${bot}?start=${prefix}_${c.id}`);
 
-            // Сворачиваем Web App через 0.4 секунды
+            // Сворачиваем Web App
             setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
