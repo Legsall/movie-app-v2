@@ -561,6 +561,7 @@
         }
 
         // 🚀 ОТПРАВКА ЗАЯВКИ
+              // 🚀 ОТПРАВКА ЗАЯВКИ (ОТКРЫВАЕТ ТОГО ЖЕ БОТА)
         async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
@@ -572,7 +573,11 @@
 
             // Передаем TMDB ID напрямую (rqm_ID для фильма, rqt_ID для сериала)
             const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
+            
+            // 🚀 ВОТ ЗДЕСЬ ИСПОЛЬЗУЕТСЯ botUsername (текущий бот)
             tg.openTelegramLink(`https://t.me/${botUsername}?start=${prefix}_${c.id}`);
+            
+            // Сворачиваем Web App
             setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
