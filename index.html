@@ -6,89 +6,59 @@
     <title>Загрузка...</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg: #101114; --card: #1c1d22; --text: #ffffff; --hint: #8b8e96; --accent: #2ea6ff; --gold: #f5c518;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding-bottom: 90px; overflow-x: hidden; }
-        
-        /* Скелетон-загрузка */
-        .skeleton { background: linear-gradient(90deg, #1c1d22 25%, #2a2c33 50%, #1c1d22 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        #skeleton-loader { padding: 15px; }
-        .skel-poster { width: 100%; height: 450px; margin-bottom: 15px; }
-        .skel-title { width: 70%; height: 30px; margin-bottom: 10px; }
-        .skel-text { width: 100%; height: 20px; margin-bottom: 8px; }
-
-        /* Основной контент */
-        #app-content { display: none; }
-        
-        /* Кнопка закрытия (сверху) */
-        .top-close-btn { position: fixed; top: 15px; right: 15px; z-index: 100; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-        .poster { width: 100%; height: auto; display: block; }
-        .content { padding: 15px; }
-
-        .title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .title { font-size: 24px; font-weight: 800; line-height: 1.2; }
-        .original-title { color: var(--hint); font-size: 14px; font-style: italic; margin-bottom: 10px; }
-        
-        /* Бейджи с инфо */
-        .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-        .badge { background: var(--card); padding: 6px 12px; border-radius: 8px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .badge.gold { color: var(--gold); }
-        .badge.red { color: #ff5252; }
-        .badge.blue { color: var(--accent); }
-
-        /* Кнопки действий */
-        .action-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-secondary { background: var(--card); color: white; border: 1px solid #333; }
-        .btn-toggle { background: transparent; color: var(--hint); border: 1px solid var(--hint); }
-        .btn-toggle.active { background: rgba(245, 197, 24, 0.1); color: var(--gold); border-color: var(--gold); }
-
-        /* Блок с информацией */
-        .info-box { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
-        .info-row { display: flex; margin-bottom: 10px; font-size: 14px; }
-        .info-row:last-child { margin-bottom: 0; }
-        .info-label { color: var(--hint); width: 120px; flex-shrink: 0; }
-        .info-value { color: var(--text); flex: 1; }
-
-        /* Описание (Read More) */
-        .desc { font-size: 15px; line-height: 1.5; color: #ccc; position: relative; }
-        .desc.collapsed { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-        .read-more { color: var(--accent); font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 5px; display: inline-block; }
-
-        /* Карусель кадров (Backdrops) */
-        .backdrops-container { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-        .backdrops-container::-webkit-scrollbar { display: none; }
-        .backdrop-img { height: 150px; border-radius: 8px; scroll-snap-align: start; object-fit: cover; }
-
-        /* Список сезонов */
-        .seasons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .season-card { background: var(--card); padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; }
-        .season-card .num { font-size: 18px; font-weight: 700; color: var(--accent); }
-        .season-card .eps { font-size: 12px; color: var(--hint); }
-
-        /* Похожие (карусель) */
-        .similar-container { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-        .similar-container::-webkit-scrollbar { display: none; }
-        .similar-card { width: 110px; flex-shrink: 0; scroll-snap-align: start; }
-        .similar-card img { width: 100%; border-radius: 8px; margin-bottom: 5px; }
-        .similar-card .title { font-size: 12px; font-weight: 600; line-height: 1.2; margin-bottom: 2px; }
-        .similar-card .year { font-size: 11px; color: var(--hint); }
-
-        /* Провайдеры */
-        .providers-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .provider-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
-
-        h3 { font-size: 18px; margin-bottom: 12px; font-weight: 700; }
-        .section { margin-bottom: 25px; }
-
-        /* Фиксированная кнопка снизу */
-        .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(transparent, #101114 30%); }
-        .btn-watch { width: 100%; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(46, 166, 255, 0.4); }
+        :root { --bg:#101114;--card:#1c1d22;--text:#fff;--hint:#8b8e96;--accent:#2ea6ff;--gold:#f5c518; }
+        *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+        body{background:var(--bg);color:var(--text);padding-bottom:90px;overflow-x:hidden;}
+        .skeleton{background:linear-gradient(90deg,#1c1d22 25%,#2a2c33 50%,#1c1d22 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+        @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+        #skeleton-loader{padding:15px;}
+        .skel-poster{width:100%;height:450px;margin-bottom:15px;}
+        .skel-title{width:70%;height:30px;margin-bottom:10px;}
+        .skel-text{width:100%;height:20px;margin-bottom:8px;}
+        #app-content{display:none;}
+        .top-close-btn{position:fixed;top:15px;right:15px;z-index:100;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);border:none;width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+        .poster{width:100%;height:auto;display:block;}
+        .content{padding:15px;}
+        .title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+        .title{font-size:24px;font-weight:800;line-height:1.2;}
+        .original-title{color:var(--hint);font-size:14px;font-style:italic;margin-bottom:10px;}
+        .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;}
+        .badge{background:var(--card);padding:6px 12px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;}
+        .badge.gold{color:var(--gold);}.badge.red{color:#ff5252;}.badge.blue{color:var(--accent);}
+        .action-row{display:flex;gap:10px;margin-bottom:20px;}
+        .btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;display:flex;justify-content:center;align-items:center;gap:8px;cursor:pointer;transition:opacity .2s;}
+        .btn:disabled{opacity:.5;cursor:not-allowed;}
+        .btn-primary{background:var(--accent);color:#fff;}
+        .btn-secondary{background:var(--card);color:#fff;border:1px solid #333;}
+        .btn-toggle{background:transparent;color:var(--hint);border:1px solid var(--hint);}
+        .btn-toggle.active{background:rgba(245,197,24,.1);color:var(--gold);border-color:var(--gold);}
+        .info-box{background:var(--card);border-radius:12px;padding:15px;margin-bottom:20px;}
+        .info-row{display:flex;margin-bottom:10px;font-size:14px;}
+        .info-row:last-child{margin-bottom:0;}
+        .info-label{color:var(--hint);width:120px;flex-shrink:0;}
+        .info-value{color:var(--text);flex:1;}
+        .desc{font-size:15px;line-height:1.5;color:#ccc;position:relative;}
+        .desc.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+        .read-more{color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;margin-top:5px;display:inline-block;}
+        .backdrops-container{display:flex;overflow-x:auto;gap:10px;margin-bottom:20px;scroll-snap-type:x mandatory;scrollbar-width:none;}
+        .backdrops-container::-webkit-scrollbar{display:none;}
+        .backdrop-img{height:150px;border-radius:8px;scroll-snap-align:start;object-fit:cover;}
+        .seasons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:20px;}
+        .season-card{background:var(--card);padding:10px;border-radius:8px;text-align:center;cursor:pointer;}
+        .season-card .num{font-size:18px;font-weight:700;color:var(--accent);}
+        .season-card .eps{font-size:12px;color:var(--hint);}
+        .similar-container{display:flex;overflow-x:auto;gap:10px;margin-bottom:20px;scroll-snap-type:x mandatory;scrollbar-width:none;}
+        .similar-container::-webkit-scrollbar{display:none;}
+        .similar-card{width:110px;flex-shrink:0;scroll-snap-align:start;cursor:pointer;}
+        .similar-card img{width:100%;border-radius:8px;margin-bottom:5px;}
+        .similar-card .title{font-size:12px;font-weight:600;line-height:1.2;margin-bottom:2px;}
+        .similar-card .year{font-size:11px;color:var(--hint);}
+        .providers-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+        .provider-logo{width:40px;height:40px;border-radius:8px;object-fit:cover;}
+        h3{font-size:18px;margin-bottom:12px;font-weight:700;}
+        .section{margin-bottom:25px;}
+        .fixed-bottom{position:fixed;bottom:0;left:0;right:0;padding:15px;background:linear-gradient(transparent,#101114 30%);}
+        .btn-watch{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;display:flex;justify-content:center;align-items:center;gap:10px;box-shadow:0 4px 15px rgba(46,166,255,.4);cursor:pointer;}
     </style>
 </head>
 <body>
@@ -106,9 +76,7 @@
         <img id="poster" class="poster" src="" alt="Постер">
         
         <div class="content">
-            <div class="title-row">
-                <div id="title" class="title"></div>
-            </div>
+            <div class="title-row"><div id="title" class="title"></div></div>
             <div id="originalTitle" class="original-title"></div>
             <div id="tagline" class="original-title" style="color: var(--hint);"></div>
 
@@ -172,25 +140,25 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем на весь экран
+        tg.expand();
 
         const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
-        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec"; // ⚠️ УКАЖИТЕ ВАШ URL
-        const userId = tg.initDataUnsafe?.user?.id || "0";
+        const API_URL = "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
+        const userId = tg.initDataUnsafe?.user?.id || urlParams.get('uid') || "0";
 
         let isInWatchlist = false;
         let isMuted = false;
         let botUsername = "katxlog_bot";
 
-        // Загрузка базовой инфы
+        // ===== ЗАГРУЗКА БАЗОВОЙ ИНФЫ =====
         async function loadBasic() {
             try {
-                const res = await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}`);
+                const res = await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}&_t=${Date.now()}`);
                 const data = await res.json();
                 
-                if (!data.ok) throw new Error(data.error);
+                if (!data.ok) throw new Error(data.error || "Unknown error");
 
                 document.title = data.title;
                 document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
@@ -221,32 +189,33 @@
                 }
 
                 botUsername = data.botUsername || "katxlog_bot";
-                isInWatchlist = data.inWatchlist;
+                isInWatchlist = !!data.inWatchlist;
+                isMuted = !!data.isMuted;          // ← ВАЖНО: подтягиваем из API
+                
                 updateWatchlistUI();
+                updateNotifyUI();                   // ← ВАЖНО: применяем состояние
 
                 document.getElementById('skeleton-loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
 
-                // Загружаем тяжелые данные (TMDB + KP)
                 loadExtended();
 
             } catch (e) {
-                alert("Ошибка загрузки: " + e.message);
+                console.error("loadBasic error:", e);
+                tg.showAlert("Ошибка загрузки: " + e.message);
             }
         }
 
-        // Загрузка расширенной инфы
+        // ===== ЗАГРУЗКА РАСШИРЕННОЙ ИНФЫ =====
         async function loadExtended() {
             try {
-                const res = await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}`);
+                const res = await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`);
                 const d = await res.json();
-
                 if (!d.ok) return;
 
                 if (d.originalTitle) document.getElementById('originalTitle').textContent = d.originalTitle;
                 if (d.tagline) document.getElementById('tagline').textContent = `«${d.tagline}»`;
 
-                // Дополнительные бейджи
                 let badgesHtml = document.getElementById('badges-container').innerHTML;
                 if (d.status) {
                     let st = d.status === "Ended" ? "Завершен" : d.status === "Returning Series" ? "Идет показ" : d.status;
@@ -276,7 +245,6 @@
                     document.getElementById('companies-row').style.display = 'none';
                 }
 
-                // Провайдеры
                 if (d.watchProviders && d.watchProviders.length > 0) {
                     document.getElementById('providers-container').style.display = 'block';
                     document.getElementById('providers').innerHTML = d.watchProviders.map(p => 
@@ -284,7 +252,6 @@
                     ).join('');
                 }
 
-                // Кадры (Backdrops)
                 if (d.backdrops && d.backdrops.length > 0) {
                     document.getElementById('backdrops-section').style.display = 'block';
                     document.getElementById('backdrops').innerHTML = d.backdrops.map(b => 
@@ -292,35 +259,32 @@
                     ).join('');
                 }
 
-                // Сезоны (для сериалов)
                 if (type === 'series' && d.seasons && d.seasons.length > 0) {
                     document.getElementById('seasons-section').style.display = 'block';
                     document.getElementById('seasons').innerHTML = d.seasons.map(s => 
-                        `<div class="season-card">
-                            <div class="num">Сезон ${s.num}</div>
-                            <div class="eps">${s.episodes} сер.</div>
-                        </div>`
+                        `<div class="season-card"><div class="num">Сезон ${s.num}</div><div class="eps">${s.episodes} сер.</div></div>`
                     ).join('');
                 }
 
-                // Похожие
+                // 🚀 ПОХОЖИЕ — передаём rowIndex в onclick (если он есть в d.similar — см. Code.gs)
                 if (d.similar && d.similar.length > 0) {
                     document.getElementById('similar-section').style.display = 'block';
-                    document.getElementById('similar').innerHTML = d.similar.map(m => 
-                        `<div class="similar-card" onclick="openSimilar('${m.id}', '${m.kind}')">
+                    document.getElementById('similar').innerHTML = d.similar.map(m => {
+                        const safeTitle = String(m.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        return `<div class="similar-card" onclick="openSimilar('${m.id}', '${m.kind}', ${m.rowIndex || 0}, '${safeTitle}', '${m.year || ''}')">
                             <img src="${m.poster}">
                             <div class="title">${m.title}</div>
                             <div class="year">${m.year}</div>
-                        </div>`
-                    ).join('');
+                        </div>`;
+                    }).join('');
                 }
 
             } catch (e) {
-                console.log("Ошибка доп. данных: ", e);
+                console.error("loadExtended error:", e);
             }
         }
 
-        // Взаимодействия
+        // ===== ВЗАИМОДЕЙСТВИЯ =====
         function toggleReadMore() {
             const desc = document.getElementById('description');
             const btn = document.getElementById('readMoreBtn');
@@ -331,21 +295,6 @@
                 desc.classList.add('collapsed');
                 btn.textContent = 'Читать далее';
             }
-        }
-
-        async function toggleWatchlist() {
-            const btn = document.getElementById('watchlist-btn');
-            btn.style.opacity = '0.5';
-            try {
-                const newState = !isInWatchlist ? 1 : 0;
-                const res = await fetch(`${API_URL}?action=set_watch&userId=${userId}&rowIndex=${rowIndex}&type=${type}&state=${newState}`);
-                const data = await res.json();
-                if (data.ok) {
-                    isInWatchlist = data.inWatchlist;
-                    updateWatchlistUI();
-                }
-            } catch(e) { console.log(e); }
-            btn.style.opacity = '1';
         }
 
         function updateWatchlistUI() {
@@ -359,25 +308,95 @@
             }
         }
 
-        async function toggleNotify() {
+        function updateNotifyUI() {
             const btn = document.getElementById('notify-btn');
+            if (isMuted) {
+                btn.classList.remove('active');
+                btn.innerHTML = '🔕 Выкл.';
+            } else {
+                btn.classList.add('active');
+                btn.innerHTML = '🔔 Увед.';
+            }
+        }
+
+        // 🚀 Кнопка "В список"
+        async function toggleWatchlist() {
+            const btn = document.getElementById('watchlist-btn');
+            
+            if (!userId || userId === "0" || userId === 0) {
+                tg.showAlert("❌ Не удалось определить ваш Telegram ID.\n\nОткройте приложение через бота (кнопка «Подробнее»).");
+                return;
+            }
+
+            btn.disabled = true;
             btn.style.opacity = '0.5';
             try {
-                const newState = !isMuted ? 1 : 0;
-                const res = await fetch(`${API_URL}?action=toggle_notify&userId=${userId}&rowIndex=${rowIndex}&type=${type}&state=${newState}`);
-                const data = await res.json();
+                tg.HapticFeedback?.impactOccurred('light');
+            } catch(e) {}
+
+            try {
+                const newState = !isInWatchlist ? 1 : 0;
+                const url = `${API_URL}?action=set_watch&userId=${encodeURIComponent(userId)}&rowIndex=${encodeURIComponent(rowIndex)}&type=${encodeURIComponent(type)}&state=${newState}&_t=${Date.now()}`;
+                const res = await fetch(url);
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); }
+                catch(e) { throw new Error("Сервер вернул не JSON. Возможно Web App развернут не для всех."); }
+
                 if (data.ok) {
-                    isMuted = data.muted;
-                    if (isMuted) {
-                        btn.classList.remove('active');
-                        btn.innerHTML = '🔕 Выкл.';
-                    } else {
-                        btn.classList.add('active');
-                        btn.innerHTML = '🔔 Увед.';
-                    }
+                    isInWatchlist = !!data.inWatchlist;
+                    updateWatchlistUI();
+                    try {
+                        tg.HapticFeedback?.notificationOccurred(isInWatchlist ? 'success' : 'warning');
+                    } catch(e) {}
+                } else {
+                    throw new Error(data.error || "Неизвестная ошибка");
                 }
-            } catch(e) { console.log(e); }
-            btn.style.opacity = '1';
+            } catch (e) {
+                console.error("toggleWatchlist:", e);
+                tg.showAlert("❌ Ошибка: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        }
+
+        // 🚀 Кнопка "Уведомления"
+        async function toggleNotify() {
+            const btn = document.getElementById('notify-btn');
+            
+            if (!userId || userId === "0" || userId === 0) {
+                tg.showAlert("❌ Не удалось определить ваш Telegram ID.\n\nОткройте приложение через бота (кнопка «Подробнее»).");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
+
+            try {
+                const newState = !isMuted ? 1 : 0;
+                const url = `${API_URL}?action=toggle_notify&userId=${encodeURIComponent(userId)}&rowIndex=${encodeURIComponent(rowIndex)}&type=${encodeURIComponent(type)}&state=${newState}&_t=${Date.now()}`;
+                const res = await fetch(url);
+                const text = await res.text();
+                let data;
+                try { data = JSON.parse(text); }
+                catch(e) { throw new Error("Сервер вернул не JSON."); }
+
+                if (data.ok) {
+                    isMuted = !!data.muted;
+                    updateNotifyUI();
+                    try { tg.HapticFeedback?.notificationOccurred('success'); } catch(e) {}
+                } else {
+                    throw new Error(data.error || "Неизвестная ошибка");
+                }
+            } catch (e) {
+                console.error("toggleNotify:", e);
+                tg.showAlert("❌ Ошибка: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
         }
 
         function shareLink() {
@@ -391,26 +410,35 @@
         }
 
         function openInBot() {
-    try {
-        let cleanBotName = String(botUsername).replace('@', '').trim();
-        if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
-        
-        // 🚀 ПРЯМОЙ ЗАПУСК ВИДЕО (вместо карточки)
-        // Для фильма: play_movie_123
-        // Для сериала: play_123
-        let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
-        let url = `https://t.me/${cleanBotName}?start=${startParam}`;
-        
-        console.log("Открываю ссылку: " + url);
-        tg.openTelegramLink(url);
-    } catch (e) {
-        tg.showAlert("Не удалось открыть бота: " + e.message);
-    }
-}
+            try {
+                let cleanBotName = String(botUsername).replace('@', '').trim();
+                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
+                let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
+                let url = `https://t.me/${cleanBotName}?start=${startParam}`;
+                console.log("Открываю ссылку: " + url);
+                tg.openTelegramLink(url);
+            } catch (e) {
+                tg.showAlert("Не удалось открыть бота: " + e.message);
+            }
+        }
 
-        function openSimilar(id, kind) {
-            // Здесь можно реализовать переход на другую карточку, если хотите
-            tg.showAlert("Чтобы посмотреть этот фильм, напишите его название боту!");
+        // 🚀 ПОХОЖИЕ — открываем карточку (если есть rowIndex) или ведём в бота
+        function openSimilar(id, kind, rowIndex, title, year) {
+            if (rowIndex && rowIndex > 0) {
+                // Есть в нашей базе — переходим на карточку
+                const newType = kind === 'm' ? 'movie' : 'series';
+                try { tg.HapticFeedback?.selectionChanged(); } catch(e) {}
+                window.location.search = `?rowIndex=${rowIndex}&type=${newType}`;
+            } else {
+                // Нет в базе — предлагаем оставить заявку
+                const msg = `❌ «${title}»${year ? ' (' + year + ')' : ''} нет в нашей базе.\n\n💡 Напишите название боту, чтобы оставить заявку на добавление.`;
+                tg.showAlert(msg, () => {
+                    try {
+                        const cleanBotName = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+                        tg.openTelegramLink(`https://t.me/${cleanBotName}`);
+                    } catch(e) {}
+                });
+            }
         }
 
         function closeApp() {
