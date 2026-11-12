@@ -386,13 +386,26 @@
             }
         }
 
+        // 🚀 ИСПРАВЛЕННАЯ ФУНКЦИЯ "ПОДЕЛИТЬСЯ"
         function shareLink() {
-            const url = `https://t.me/${botUsername}?start=open_${type === 'movie' ? 'movie_' : ''}${rowIndex}`;
-            const title = document.getElementById('title').textContent;
-            if (navigator.share) {
-                navigator.share({ title: title, url: url });
-            } else {
-                window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, '_blank');
+            try {
+                try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
+                
+                let cleanBotName = String(botUsername).replace('@', '').trim();
+                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
+                
+                let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
+                let botLink = `https://t.me/${cleanBotName}?start=${startParam}`;
+                let title = document.getElementById('title').textContent;
+                
+                // Формируем ссылку для системного окна "Поделиться" Telegram
+                let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`;
+                
+                // Открываем через нативный API Telegram (работает во всех клиентах)
+                tg.openTelegramLink(shareUrl);
+                
+            } catch (e) {
+                tg.showAlert("Не удалось поделиться: " + e.message);
             }
         }
 
