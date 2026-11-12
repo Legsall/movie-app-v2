@@ -356,7 +356,7 @@
             }
         }
 
-        async function toggleNotify() {
+               async function toggleNotify() {
             const btn = document.getElementById('notify-btn');
             if (!userId || userId === "0" || userId === 0) {
                 tg.showAlert("❌ Не удалось определить ваш Telegram ID.\n\nОткройте приложение через бота (кнопка «Подробнее»).");
@@ -367,19 +367,27 @@
 
             try {
                 const newState = !isMuted ? 1 : 0;
+                // Добавляем &_t= для сброса кэша браузера
                 const url = `${API_URL}?action=toggle_notify&userId=${encodeURIComponent(userId)}&rowIndex=${encodeURIComponent(rowIndex)}&type=${encodeURIComponent(type)}&state=${newState}&_t=${Date.now()}`;
                 const res = await fetch(url);
                 const text = await res.text();
+                
                 let data;
-                try { data = JSON.parse(text); } catch(e) { throw new Error("Сервер вернул не JSON."); }
+                try { data = JSON.parse(text); } 
+                catch(e) { 
+                    console.error("Сырой ответ от сервера:", text);
+                    throw new Error("Сервер вернул не JSON. Возможно, Web App не пересобран."); 
+                }
 
                 if (data.ok) {
                     isMuted = !!data.muted;
                     updateNotifyUI();
                     try { tg.HapticFeedback?.notificationOccurred('success'); } catch(e) {}
-                } else { throw new Error(data.error || "Неизвестная ошибка"); }
+                } else {
+                    throw new Error(data.error || "Неизвестная ошибка сервера");
+                }
             } catch (e) {
-                console.error("toggleNotify:", e);
+                console.error("Ошибка toggleNotify:", e);
                 tg.showAlert("❌ Ошибка: " + e.message);
             } finally {
                 btn.disabled = false; btn.style.opacity = '1';
