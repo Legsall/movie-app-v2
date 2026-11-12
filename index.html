@@ -162,8 +162,8 @@
             </div>
         </div>
 
-        <div class="fixed-bottom">
-            <button class="btn-watch" onclick="openInBot()">
+        <div class="fixed-bottom" style="z-index: 9999;">
+            <button type="button" class="btn-watch" onclick="openInBot()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 Смотреть в боте
             </button>
@@ -391,8 +391,22 @@
         }
 
         function openInBot() {
-            const url = `https://t.me/${botUsername}?start=open_${type === 'movie' ? 'movie_' : ''}${rowIndex}`;
-            tg.openTelegramLink(url);
+            try {
+                // Очищаем имя бота от лишних символов
+                let cleanBotName = String(botUsername).replace('@', '').trim();
+                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
+                
+                // Формируем ссылку
+                let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
+                let url = `https://t.me/${cleanBotName}?start=${startParam}`;
+                
+                console.log("Открываю ссылку: " + url); // Для отладки
+                
+                // Открываем ссылку через Telegram API
+                tg.openTelegramLink(url);
+            } catch (e) {
+                tg.showAlert("Не удалось открыть бота: " + e.message);
+            }
         }
 
         function openSimilar(id, kind) {
