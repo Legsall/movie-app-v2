@@ -391,23 +391,22 @@
         }
 
         function openInBot() {
-            try {
-                // Очищаем имя бота от лишних символов
-                let cleanBotName = String(botUsername).replace('@', '').trim();
-                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
-                
-                // Формируем ссылку
-                let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
-                let url = `https://t.me/${cleanBotName}?start=${startParam}`;
-                
-                console.log("Открываю ссылку: " + url); // Для отладки
-                
-                // Открываем ссылку через Telegram API
-                tg.openTelegramLink(url);
-            } catch (e) {
-                tg.showAlert("Не удалось открыть бота: " + e.message);
-            }
-        }
+    try {
+        let cleanBotName = String(botUsername).replace('@', '').trim();
+        if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
+        
+        // 🚀 ПРЯМОЙ ЗАПУСК ВИДЕО (вместо карточки)
+        // Для фильма: play_movie_123
+        // Для сериала: play_123
+        let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
+        let url = `https://t.me/${cleanBotName}?start=${startParam}`;
+        
+        console.log("Открываю ссылку: " + url);
+        tg.openTelegramLink(url);
+    } catch (e) {
+        tg.showAlert("Не удалось открыть бота: " + e.message);
+    }
+}
 
         function openSimilar(id, kind) {
             // Здесь можно реализовать переход на другую карточку, если хотите
