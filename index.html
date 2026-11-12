@@ -159,7 +159,7 @@
         let botUsername = "katxlog_bot";
         let currentTmdb = null;
 
-        // 🚀 1. ДАННЫЕ ДЛЯ ПРЯМОГО ЗАПРОСА К TMDB (от Claude AI)
+        // 🚀 1. ДАННЫЕ ДЛЯ ПРЯМОГО ЗАПРОСА К TMDB
         const TMDB_KEY = "ca153f9966020e101edec817d9a01699";
         const RU_COUNTRIES = {
             US:"США", GB:"Великобритания", RU:"Россия", FR:"Франция", DE:"Германия", IT:"Италия",
@@ -560,11 +560,11 @@
             showRequestButton();
         }
 
-                      async function requestMovie() {
+        // 🚀 ОТПРАВКА ЗАЯВКИ БЕЗ ЗАПРОСОВ К СЕРВЕРУ (ПЕРЕДАЧА ID В БОТА)
+        async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
             
-            // Виброотклик при нажатии
             try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
 
             const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
@@ -575,13 +575,6 @@
 
             // Сворачиваем Web App через 0.4 секунды
             setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
-        }
-                
-            } catch (e) {
-                tg.showAlert("Ошибка: " + e.message);
-            } finally {
-                showRequestButton();
-            }
         }
 
         function closeApp() { tg.close(); }
