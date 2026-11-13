@@ -194,6 +194,11 @@ try { tg.setHeaderColor('#0b0a12'); tg.setBackgroundColor('#0b0a12'); } catch(e)
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const q = new URLSearchParams(location.search);
+  // 🚀 АВТООЧИСТКА КЭША (если открыть ссылку с ?clear=1)
+if (q.get('clear') === '1') {
+    localStorage.clear();
+    try { tg.showAlert("✅ Кэш браузера успешно очищен!"); } catch(e){ alert("Кэш очищен"); }
+}
 const rowIndex = q.get('rowIndex');
 const type = q.get('type') || 'movie';
 const API_URL = q.get('api') || "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
