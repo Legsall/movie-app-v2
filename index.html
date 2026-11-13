@@ -6,7 +6,6 @@
 <title>Загрузка…</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0b0a12;--plum:#1a1530;--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.12);--text:#f6f3ff;--hint:#a49fbd;--amber:#ffb347;--coral:#ff5d73;--ice:#8fd3ff;--r:22px}
@@ -381,16 +380,19 @@ function playEpisode(absoluteIdx) {
   setTimeout(() => goBot(`play_ep_${rowIndex}_${absoluteIdx}_1080p`), 300);
 }
 
-// 🚀 ЗАГРУЗКА ДАННЫХ (КАК В СТАРОМ КОДЕ, НО С НОВЫМ ДИЗАЙНОМ)
 async function loadBasic() {
   try {
     const data = await (await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}&_t=${Date.now()}`)).json();
     if (!data.ok) throw new Error(data.error || "Unknown error");
+    
     document.title = data.title;
     setPoster(data.poster || 'https://via.placeholder.com/500x750?text=No+Poster');
     $('title').textContent = data.title;
     setRings(data.ratingTMDB, data.ratingKP);
+    
+    // 🚀 ДОБАВЛЯЕМ БАЗОВЫЕ БЕЙДЖИ (ФИЛЬМ/СЕРИАЛ + ГОД)
     $('chips').innerHTML = chip(type === 'movie' ? '🍿 Фильм' : '📺 Сериал') + (data.year ? chip('📅 ' + data.year) : '');
+    
     $('country').innerHTML = data.country || "—";
     $('genres').textContent = data.genres || "—";
     setDesc(data.description);
@@ -407,15 +409,13 @@ async function loadBasic() {
     $('main-action-btn').onclick = openInBot;
     show();
     
-    // 🚀 ЗАГРУЖАЕМ РАСШИРЕННУЮ ИНФУ ЧЕРЕЗ GAS (КАК РАНЬШЕ)
     loadExtended();
   } catch (e) { console.error(e); show(); tg.showAlert("Ошибка загрузки: " + e.message); }
 }
 
 async function loadExtended() {
   try {
-    const res = await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`);
-    const d = await res.json();
+    const d = await (await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`)).json();
     if (!d.ok) return;
 
     if (d.originalTitle) $('originalTitle').textContent = d.originalTitle;
@@ -425,15 +425,17 @@ async function loadExtended() {
     if (d.status) c += chip('🚦 ' + (d.status === "Ended" ? "Завершён" : d.status === "Returning Series" ? "Идёт показ" : d.status));
     if (d.runtime > 0) { const h = Math.floor(d.runtime / 60), m = d.runtime % 60; c += chip('⏱ ' + (h > 0 ? `${h} ч ${m} мин` : `${m} мин`)); }
     if (d.ageRating) c += chip(d.ageRating, 'hot');
-    if (d.ratingMpaa) c += chip(d.ratingMpaa, 'hot');
-    if (d.premiereWorld) c += chip('🗓 ' + new Date(d.premiereWorld).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}));
     
+    // 🚀 ДОБАВЛЯЕМ MPAA, БЮДЖЕТ И СБОРЫ
+    if (d.ratingMpaa) c += chip(d.ratingMpaa, 'hot');
     let budgetVal = d.budgetKP || d.budget || 0;
     if (budgetVal > 0) c += chip('💰 $' + (budgetVal / 1000000).toFixed(1) + ' млн');
     if (d.feesWorld > 0) c += chip('💵 $' + (d.feesWorld / 1000000).toFixed(1) + ' млн');
+    
+    if (d.premiereWorld) c += chip('🗓 ' + new Date(d.premiereWorld).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}));
 
-    const chips = $('chips').innerHTML.split('<span class="chip')[0];
-    $('chips').innerHTML = chips + c;
+    // 🚀 ВСТАВЛЯЕМ НОВЫЕ БЕЙДЖИ (НЕ СТИРАЯ СТАРЫЕ)
+    $('chips').insertAdjacentHTML('beforeend', c);
 
     const fill = (id, rowId, v) => { if (v) { $(id).textContent = v; $(rowId).style.display = 'flex'; } else { $(rowId).style.display = 'none'; } };
     fill('director', 'director-row', d.director);
@@ -467,7 +469,7 @@ async function loadExtended() {
         openSimilar(m.id, m.kind, m.rowIndex || 0, m.title, m.year || '');
       };
     }
-  } catch (e) { console.error("loadExtended error:", e); }
+  } catch (e) { console.error("loadExtended:", e); }
 }
 
 function updateWatchlistUI() {
@@ -534,7 +536,11 @@ async function loadTmdbCard(id, kind, title, year) {
   $('action-row').style.display = 'none'; $('not-in-base').style.display = 'block';
   const bb = $('main-action-btn'); bb.innerHTML = '⏳ Загрузка…'; bb.disabled = true;
   try {
-    const data = JSON.parse(await (await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`)).text());
+    let data = null;
+    try { data = await fetchTmdbDirect(id, kind); } catch (e1) { console.warn("TMDB direct:", e1); }
+    if (!data) {
+      data = JSON.parse(await (await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`)).text());
+    }
     if (data && data.ok && data.inBase) { location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`; return; }
     if (!data || !data.ok) throw new Error((data && data.error) || "Нет данных");
     currentTmdb.title = data.title || title; currentTmdb.year = data.year || year; currentTmdb.countryRaw = data.countryRaw || "";
@@ -544,6 +550,7 @@ async function loadTmdbCard(id, kind, title, year) {
     $('originalTitle').textContent = data.originalTitle || '';
     $('tagline').textContent = data.tagline ? `«${data.tagline}»` : '';
     setRings(data.ratingTMDB, data.ratingKP);
+    // 🚀 ДОБАВЛЯЕМ БЕЙДЖ ТИПА ДЛЯ ТЕХ, КОГО НЕТ В БАЗЕ
     $('chips').innerHTML = chip(kind === 'm' ? '🍿 Фильм' : '📺 Сериал') + (currentTmdb.year ? chip('📅 ' + currentTmdb.year) : '') + chip('Нет в базе', 'hot');
     $('country').innerHTML = data.country || "—"; $('genres').textContent = data.genres || "—";
     if (data.director) { $('director').textContent = data.director; $('director-row').style.display = 'flex'; }
@@ -558,39 +565,14 @@ async function loadTmdbCard(id, kind, title, year) {
   showRequestButton();
 }
 
-async function requestMovie() {
-    const c = currentTmdb;
-    if (!c) return;
-    const btn = document.getElementById('main-action-btn');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Отправка...';
-
-    try {
-        const tgUser = tg.initDataUnsafe?.user || {};
-        const firstName = tgUser.first_name || "Пользователь";
-        const username = tgUser.username || "";
-        const userId = tgUser.id || "0";
-        const typeStr = c.kind === 'm' ? 'movie' : 'series';
-        
-        const url = `${API_URL}?action=create_request&title=${encodeURIComponent(c.title)}&year=${encodeURIComponent(c.year || "")}&country=${encodeURIComponent(c.countryRaw || "")}&type=${typeStr}&userId=${userId}&firstName=${encodeURIComponent(firstName)}&username=${encodeURIComponent(username)}&_t=${Date.now()}`;
-        
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        if (data.ok) {
-            tg.showAlert("✅ Заявка успешно отправлена! Админ получил уведомление.");
-            setTimeout(() => { tg.close(); }, 2500);
-        } else {
-            throw new Error(data.error || "Ошибка сервера");
-        }
-    } catch(e) {
-        tg.showAlert("❌ Ошибка: " + e.message);
-        btn.disabled = false;
-        btn.innerHTML = `📩 Оставить заявку`;
-    }
+function requestMovie() {
+  const c = currentTmdb; if (!c) return;
+  hap('impactOccurred', 'light');
+  $('main-action-btn').innerHTML = '⏳ Подготовка…';
+  goBot(`${c.kind === 'm' ? 'rqm' : 'rqt'}_${c.id}`);
 }
-
 function closeApp() { tg.close(); }
+
 loadBasic();
 </script>
 </body>
