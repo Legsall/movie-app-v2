@@ -7,8 +7,6 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://api.themoviedb.org">
-<link rel="preconnect" href="https://image.tmdb.org">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0b0a12;--plum:#1a1530;--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.12);--text:#f6f3ff;--hint:#a49fbd;--amber:#ffb347;--coral:#ff5d73;--ice:#8fd3ff;--r:22px}
@@ -194,11 +192,6 @@ try { tg.setHeaderColor('#0b0a12'); tg.setBackgroundColor('#0b0a12'); } catch(e)
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const q = new URLSearchParams(location.search);
-  // 🚀 АВТООЧИСТКА КЭША (если открыть ссылку с ?clear=1)
-if (q.get('clear') === '1') {
-    localStorage.clear();
-    try { tg.showAlert("✅ Кэш браузера успешно очищен!"); } catch(e){ alert("Кэш очищен"); }
-}
 const rowIndex = q.get('rowIndex');
 const type = q.get('type') || 'movie';
 const API_URL = q.get('api') || "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
@@ -207,9 +200,6 @@ const userId = tg.initDataUnsafe?.user?.id || q.get('uid') || "0";
 let isInWatchlist = false, isMuted = false, currentTmdb = null, progressData = null;
 let episodesList = [], seasonsData = [], frames = [], frameIdx = 0, sheetOpen = false, sheetView = 'seasons', lbOpen = false;
 
-const TMDB_KEY = "ca153f9966020e101edec817d9a01699";
-const RU = {US:"США",GB:"Великобритания",RU:"Россия",FR:"Франция",DE:"Германия",IT:"Италия",ES:"Испания",CA:"Канада",AU:"Австралия",JP:"Япония",KR:"Южная Корея",CN:"Китай",IN:"Индия",BR:"Бразилия",MX:"Мексика",TR:"Турция",UA:"Украина",BY:"Беларусь",KZ:"Казахстан",UZ:"Узбекистан",PL:"Польша",CZ:"Чехия",SE:"Швеция",NO:"Норвегия",DK:"Дания",FI:"Финляндия",NL:"Нидерланды",BE:"Бельгия",CH:"Швейцария",AT:"Австрия",IE:"Ирландия",PT:"Португалия",GR:"Греция",IL:"Израиль",TH:"Таиланд",NZ:"Новая Зеландия",HK:"Гонконг",TW:"Тайвань",AR:"Аргентина",ZA:"ЮАР",HU:"Венгрия",RO:"Румыния"};
-const flag = iso => String(iso).toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
 const hap = (k,v) => { try { tg.HapticFeedback?.[k](v); } catch(e){} };
 
 const card = $('card'); let touching = false, t0 = performance.now();
@@ -391,7 +381,7 @@ function playEpisode(absoluteIdx) {
   setTimeout(() => goBot(`play_ep_${rowIndex}_${absoluteIdx}_1080p`), 300);
 }
 
-// 🚀 УСКОРЕННАЯ ЗАГРУЗКА ДАННЫХ ИЗ TMDB (напрямую в браузере)
+// 🚀 ЗАГРУЗКА ДАННЫХ (КАК В СТАРОМ КОДЕ, НО С НОВЫМ ДИЗАЙНОМ)
 async function loadBasic() {
   try {
     const data = await (await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}&_t=${Date.now()}`)).json();
@@ -410,98 +400,27 @@ async function loadBasic() {
     updateWatchlistUI(); updateNotifyUI();
     if (data.progress && type === 'series') {
       progressData = data.progress;
-      $('continue-text').textContent = `Продолжить: сезон ${progressData.season}, серия ${progressData.episode}`;
+      $('continue-text').textContent = `Продолжить (Сезон ${progressData.season}, Серия ${progressData.episode})`;
       $('continue-btn').style.display = 'flex';
     }
     $('action-row').style.display = 'flex'; $('not-in-base').style.display = 'none';
     $('main-action-btn').onclick = openInBot;
     show();
     
-    // 🚀 ТЕПЕРЬ ЗАГРУЖАЕМ ОСТАЛЬНОЕ БЫСТРО (ИЗ КЭША ИЛИ TMDB)
-    loadExtendedFast(data.title, data.year);
+    // 🚀 ЗАГРУЖАЕМ РАСШИРЕННУЮ ИНФУ ЧЕРЕЗ GAS (КАК РАНЬШЕ)
+    loadExtended();
   } catch (e) { console.error(e); show(); tg.showAlert("Ошибка загрузки: " + e.message); }
 }
 
-async function loadExtendedFast(title, year) {
-  // Проверяем кэш браузера
-  const cacheKey = `ext_${type}_${rowIndex}`;
-  const cached = localStorage.getItem(cacheKey);
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.time < 86400000) { // Кэш на 24 часа
-        renderExtended(parsed.data);
-        return; // Мгновенная загрузка!
-      }
-    } catch(e){}
-  }
-
+async function loadExtended() {
   try {
-    const kind = type === 'movie' ? 'movie' : 'tv';
-    // 1. Ищем напрямую в TMDB по названию
-    const searchTitle = String(title || '').replace(/\([^)]*\)/g, '').trim();
-    const searchUrl = `https://api.themoviedb.org/3/search/${kind}?api_key=${TMDB_KEY}&language=ru-RU&query=${encodeURIComponent(searchTitle)}${year ? '&year=' + year : ''}`;
-    let s = await (await fetch(searchUrl)).json();
-    
-    if (!s.results || !s.results.length) {
-        s = await (await fetch(`https://api.themoviedb.org/3/search/${kind}?api_key=${TMDB_KEY}&language=ru-RU&query=${encodeURIComponent(searchTitle)}`)).json();
-    }
-    
-    if (s.results && s.results.length) {
-      const tmdbId = s.results[0].id;
-      // 2. Получаем полные данные
-      const append = "credits,similar,watch/providers,images" + (kind === "tv" ? ",seasons,content_ratings" : ",release_dates");
-      const t = await (await fetch(`https://api.themoviedb.org/3/${kind}/${tmdbId}?api_key=${TMDB_KEY}&language=ru-RU&append_to_response=${append}`)).json();
-      
-      // 3. Парсим в наш формат
-      const d = { ok: true, cast: "", director: "", similar: [], originalTitle: "", tagline: t.tagline || "", runtime: 0, status: t.status || "", premiereWorld: t.release_date || t.first_air_date || "", ageRating: "", watchProviders: [], companies: [], backdrops: [], seasons: [], budget: t.budget || 0, feesWorld: 0, ratingMpaa: "" };
-      
-      if (kind === "movie" && t.release_dates && t.release_dates.results) {
-          const ru = t.release_dates.results.find(r => r.iso_3166_1 === "RU" && r.release_dates.some(rd => rd.certification));
-          const us = t.release_dates.results.find(r => r.iso_3166_1 === "US" && r.release_dates.some(rd => rd.certification));
-          if (ru) d.ageRating = ru.release_dates.find(rd => rd.certification).certification + "+";
-          else if (us) d.ageRating = us.release_dates.find(rd => rd.certification).certification;
-      } else if (kind === "tv" && t.content_ratings && t.content_ratings.results) {
-          const ru = t.content_ratings.results.find(r => r.iso_3166_1 === "RU" && r.rating);
-          const us = t.content_ratings.results.find(r => r.iso_3166_1 === "US" && r.rating);
-          if (ru) d.ageRating = ru.rating + "+";
-          else if (us) d.ageRating = us.rating;
-      }
+    const res = await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`);
+    const d = await res.json();
+    if (!d.ok) return;
 
-      const crew = (t.credits && t.credits.crew) || [], cast = (t.credits && t.credits.cast) || [];
-      const dir = crew.find(x => x.job === "Director");
-      d.originalTitle = t.original_title || t.original_name || "";
-      d.director = kind === "movie" ? (dir ? dir.name : "") : (t.created_by || []).map(x => x.name).join(", ");
-      d.cast = cast.slice(0, 10).map(x => x.name).join(", ");
-      if (kind === "movie") d.runtime = t.runtime || 0; else d.runtime = (t.episode_run_time && t.episode_run_time.length > 0) ? t.episode_run_time[0] : 0;
-      if (kind === "tv" && t.seasons) d.seasons = t.seasons.filter(s => s.season_number > 0).map(s => ({ name: s.name, num: s.season_number, episodes: s.episode_count, year: s.air_date ? s.air_date.substring(0, 4) : "" }));
-      if (t.production_companies) d.companies = t.production_companies.map(c => c.name).slice(0, 3);
-      if (t["watch/providers"] && t["watch/providers"].results) {
-          const prov = t["watch/providers"].results.RU || t["watch/providers"].results.US;
-          if (prov && prov.flatrate) d.watchProviders = prov.flatrate.map(p => ({ name: p.provider_name, logo: "https://image.tmdb.org/t/p/w200" + p.logo_path }));
-      }
-      if (t.images && t.images.backdrops) d.backdrops = t.images.backdrops.slice(0, 5).map(b => "https://image.tmdb.org/t/p/w780" + b.file_path);
-      d.similar = ((t.similar && t.similar.results) || []).filter(x => x.poster_path).slice(0, 8).map(x => ({ id: x.id, kind: kind === "movie" ? "m" : "t", title: x.title || x.name || "", year: (x.release_date || x.first_air_date || "").substring(0, 4), poster: "https://image.tmdb.org/t/p/w200" + x.poster_path }));
-
-      // Сохраняем в кэш
-      localStorage.setItem(cacheKey, JSON.stringify({ time: Date.now(), data: d }));
-      renderExtended(d);
-      return;
-    }
-  } catch (e) {
-    console.warn("Прямой запрос TMDB не удался, грузим через GAS", e);
-  }
-
-  // Fallback (если TMDB не ответил)
-  try {
-    const d = await (await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`)).json();
-    if (d.ok) renderExtended(d);
-  } catch(e) {}
-}
-
-function renderExtended(d) {
     if (d.originalTitle) $('originalTitle').textContent = d.originalTitle;
     if (d.tagline) $('tagline').textContent = `«${d.tagline}»`;
+
     let c = '';
     if (d.status) c += chip('🚦 ' + (d.status === "Ended" ? "Завершён" : d.status === "Returning Series" ? "Идёт показ" : d.status));
     if (d.runtime > 0) { const h = Math.floor(d.runtime / 60), m = d.runtime % 60; c += chip('⏱ ' + (h > 0 ? `${h} ч ${m} мин` : `${m} мин`)); }
@@ -509,12 +428,10 @@ function renderExtended(d) {
     if (d.ratingMpaa) c += chip(d.ratingMpaa, 'hot');
     if (d.premiereWorld) c += chip('🗓 ' + new Date(d.premiereWorld).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}));
     
-    // 🚀 ДОБАВЛЯЕМ БЮДЖЕТ И СБОРЫ
     let budgetVal = d.budgetKP || d.budget || 0;
     if (budgetVal > 0) c += chip('💰 $' + (budgetVal / 1000000).toFixed(1) + ' млн');
     if (d.feesWorld > 0) c += chip('💵 $' + (d.feesWorld / 1000000).toFixed(1) + ' млн');
 
-    // Очищаем старые бейджи перед добавлением
     const chips = $('chips').innerHTML.split('<span class="chip')[0];
     $('chips').innerHTML = chips + c;
 
@@ -550,6 +467,7 @@ function renderExtended(d) {
         openSimilar(m.id, m.kind, m.rowIndex || 0, m.title, m.year || '');
       };
     }
+  } catch (e) { console.error("loadExtended error:", e); }
 }
 
 function updateWatchlistUI() {
@@ -616,11 +534,7 @@ async function loadTmdbCard(id, kind, title, year) {
   $('action-row').style.display = 'none'; $('not-in-base').style.display = 'block';
   const bb = $('main-action-btn'); bb.innerHTML = '⏳ Загрузка…'; bb.disabled = true;
   try {
-    let data = null;
-    try { data = await fetchTmdbDirect(id, kind); } catch (e1) { console.warn("TMDB direct:", e1); }
-    if (!data) {
-      data = JSON.parse(await (await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`)).text());
-    }
+    const data = JSON.parse(await (await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`)).text());
     if (data && data.ok && data.inBase) { location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`; return; }
     if (!data || !data.ok) throw new Error((data && data.error) || "Нет данных");
     currentTmdb.title = data.title || title; currentTmdb.year = data.year || year; currentTmdb.countryRaw = data.countryRaw || "";
@@ -642,30 +556,6 @@ async function loadTmdbCard(id, kind, title, year) {
     setDesc('', 'Не удалось загрузить данные (' + e.message + '). Вы всё равно можете оставить заявку.');
   }
   showRequestButton();
-}
-
-async function fetchTmdbDirect(id, kind) {
-  const k = kind === 'm' ? 'movie' : 'tv';
-  const base = `https://api.themoviedb.org/3/${k}/${id}?api_key=${TMDB_KEY}`;
-  const t = await (await fetch(base + "&language=ru-RU&append_to_response=videos,credits&include_video_language=ru,en,null")).json();
-  if (!t || !t.id) throw new Error(t && t.status_message ? t.status_message : "TMDB: нет данных");
-  let description = t.overview || "";
-  if (!description) { try { description = (await (await fetch(base + "&language=en-US")).json()).overview || ""; } catch(e){} }
-  let iso = (t.production_countries || []).map(c => c.iso_3166_1);
-  if (!iso.length) iso = t.origin_country || [];
-  const vid = ((t.videos && t.videos.results) || []).find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
-  const crew = (t.credits && t.credits.crew) || [];
-  return {
-    ok: true, title: t.title || t.name || "", originalTitle: t.original_title || t.original_name || "", tagline: t.tagline || "",
-    year: (t.release_date || t.first_air_date || "").substring(0, 4),
-    poster: t.poster_path ? "https://image.tmdb.org/t/p/w500" + t.poster_path : "",
-    country: iso.map(i => flag(i) + " " + (RU[i] || i)).join(", "), countryRaw: iso.map(i => RU[i] || i).join(", "),
-    genres: (t.genres || []).map(g => g.name).join(", "), description,
-    trailer: vid ? "https://www.youtube.com/watch?v=" + vid.key : "",
-    ratingTMDB: t.vote_average ? String(Math.round(t.vote_average * 10) / 10) : "", ratingKP: "",
-    cast: ((t.credits && t.credits.cast) || []).slice(0, 10).map(c => c.name).join(", "),
-    director: k === 'movie' ? ((crew.find(c => c.job === "Director") || {}).name || "") : (t.created_by || []).map(c => c.name).join(", ")
-  };
 }
 
 async function requestMovie() {
