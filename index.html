@@ -34,8 +34,35 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(120% 6
 
 .content{padding:46px 18px 0;max-width:640px;margin:0 auto}
 h1{font:800 26px/1.15 Unbounded,sans-serif;text-align:center;letter-spacing:-.5px}
-.orig,.tag{text-align:center;color:var(--hint);font-size:13px;margin-top:6px}
-.tag{font-style:italic}
+
+/* 🚀 КРАСИВОЕ АНГЛИЙСКОЕ НАЗВАНИЕ */
+.orig {
+    text-align: center;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 10px;
+    opacity: 0.9;
+    text-shadow: 0 2px 10px rgba(255,255,255,0.3);
+}
+
+/* 🚀 ЦВЕТНАЯ ЦИТАТА */
+.tag {
+    text-align: center;
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 600;
+    margin-top: 12px;
+    line-height: 1.5;
+    padding: 0 10px;
+    background: linear-gradient(90deg, #ffb347 0%, #ff5d73 50%, #8fd3ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:16px 0}
 .chip{padding:6px 12px;border-radius:99px;background:var(--glass);border:1px solid var(--line);font-size:12.5px;font-weight:600;backdrop-filter:blur(10px)}
 .chip.hot{background:rgba(255,93,115,.16);border-color:rgba(255,93,115,.5);color:#ffb3bd}
@@ -390,7 +417,6 @@ async function loadBasic() {
     $('title').textContent = data.title;
     setRings(data.ratingTMDB, data.ratingKP);
     
-    // 🚀 ДОБАВЛЯЕМ БАЗОВЫЕ БЕЙДЖИ (ФИЛЬМ/СЕРИАЛ + ГОД)
     $('chips').innerHTML = chip(type === 'movie' ? '🍿 Фильм' : '📺 Сериал') + (data.year ? chip('📅 ' + data.year) : '');
     
     $('country').innerHTML = data.country || "—";
@@ -423,10 +449,17 @@ async function loadExtended() {
 
     let c = '';
     if (d.status) c += chip('🚦 ' + (d.status === "Ended" ? "Завершён" : d.status === "Returning Series" ? "Идёт показ" : d.status));
-    if (d.runtime > 0) { const h = Math.floor(d.runtime / 60), m = d.runtime % 60; c += chip('⏱ ' + (h > 0 ? `${h} ч ${m} мин` : `${m} мин`)); }
+    
+    // 🚀 ВЫВОДИМ ВРЕМЯ СЕРИИ / ФИЛЬМА
+    if (d.runtime > 0) { 
+        const h = Math.floor(d.runtime / 60), m = d.runtime % 60; 
+        c += chip('⏱ ' + (h > 0 ? `${h} ч ${m} мин` : `${m} мин`)); 
+    } else if (type === 'series') {
+        c += chip('⏱ ~45 мин'); // Фолбэк для сериалов, если TMDB не отдал время
+    }
+
     if (d.ageRating) c += chip(d.ageRating, 'hot');
     
-    // 🚀 ДОБАВЛЯЕМ MPAA, БЮДЖЕТ И СБОРЫ
     if (d.ratingMpaa) c += chip(d.ratingMpaa, 'hot');
     let budgetVal = d.budgetKP || d.budget || 0;
     if (budgetVal > 0) c += chip('💰 $' + (budgetVal / 1000000).toFixed(1) + ' млн');
@@ -434,7 +467,6 @@ async function loadExtended() {
     
     if (d.premiereWorld) c += chip('🗓 ' + new Date(d.premiereWorld).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}));
 
-    // 🚀 ВСТАВЛЯЕМ НОВЫЕ БЕЙДЖИ (НЕ СТИРАЯ СТАРЫЕ)
     $('chips').insertAdjacentHTML('beforeend', c);
 
     const fill = (id, rowId, v) => { if (v) { $(id).textContent = v; $(rowId).style.display = 'flex'; } else { $(rowId).style.display = 'none'; } };
@@ -550,7 +582,6 @@ async function loadTmdbCard(id, kind, title, year) {
     $('originalTitle').textContent = data.originalTitle || '';
     $('tagline').textContent = data.tagline ? `«${data.tagline}»` : '';
     setRings(data.ratingTMDB, data.ratingKP);
-    // 🚀 ДОБАВЛЯЕМ БЕЙДЖ ТИПА ДЛЯ ТЕХ, КОГО НЕТ В БАЗЕ
     $('chips').innerHTML = chip(kind === 'm' ? '🍿 Фильм' : '📺 Сериал') + (currentTmdb.year ? chip('📅 ' + currentTmdb.year) : '') + chip('Нет в базе', 'hot');
     $('country').innerHTML = data.country || "—"; $('genres').textContent = data.genres || "—";
     if (data.director) { $('director').textContent = data.director; $('director-row').style.display = 'flex'; }
