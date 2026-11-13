@@ -449,7 +449,7 @@ async function loadExtendedFast(title, year) {
       const t = await (await fetch(`https://api.themoviedb.org/3/${kind}/${tmdbId}?api_key=${TMDB_KEY}&language=ru-RU&append_to_response=${append}`)).json();
       
       // 3. Парсим в наш формат
-      const d = { ok: true, cast: "", director: "", similar: [], originalTitle: "", tagline: t.tagline || "", runtime: 0, status: t.status || "", premiereWorld: t.release_date || t.first_air_date || "", ageRating: "", watchProviders: [], companies: [], backdrops: [], seasons: [] };
+      const d = { ok: true, cast: "", director: "", similar: [], originalTitle: "", tagline: t.tagline || "", runtime: 0, status: t.status || "", premiereWorld: t.release_date || t.first_air_date || "", ageRating: "", watchProviders: [], companies: [], backdrops: [], seasons: [], budget: t.budget || 0, feesWorld: 0, ratingMpaa: "" };
       
       if (kind === "movie" && t.release_dates && t.release_dates.results) {
           const ru = t.release_dates.results.find(r => r.iso_3166_1 === "RU" && r.release_dates.some(rd => rd.certification));
@@ -501,7 +501,14 @@ function renderExtended(d) {
     if (d.status) c += chip('🚦 ' + (d.status === "Ended" ? "Завершён" : d.status === "Returning Series" ? "Идёт показ" : d.status));
     if (d.runtime > 0) { const h = Math.floor(d.runtime / 60), m = d.runtime % 60; c += chip('⏱ ' + (h > 0 ? `${h} ч ${m} мин` : `${m} мин`)); }
     if (d.ageRating) c += chip(d.ageRating, 'hot');
+    if (d.ratingMpaa) c += chip(d.ratingMpaa, 'hot');
     if (d.premiereWorld) c += chip('🗓 ' + new Date(d.premiereWorld).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'}));
+    
+    // 🚀 ДОБАВЛЯЕМ БЮДЖЕТ И СБОРЫ
+    let budgetVal = d.budgetKP || d.budget || 0;
+    if (budgetVal > 0) c += chip('💰 $' + (budgetVal / 1000000).toFixed(1) + ' млн');
+    if (d.feesWorld > 0) c += chip('💵 $' + (d.feesWorld / 1000000).toFixed(1) + ' млн');
+
     // Очищаем старые бейджи перед добавлением
     const chips = $('chips').innerHTML.split('<span class="chip')[0];
     $('chips').innerHTML = chips + c;
