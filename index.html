@@ -6,79 +6,180 @@
     <title>Загрузка...</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg:#101114;--card:#1c1d22;--text:#fff;--hint:#8b8e96;--accent:#2ea6ff;--gold:#f5c518; }
-        *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
-        body{background:var(--bg);color:var(--text);padding-bottom:90px;overflow-x:hidden;}
-        .skeleton{background:linear-gradient(90deg,#1c1d22 25%,#2a2c33 50%,#1c1d22 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
-        @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-        #skeleton-loader{padding:15px;}
-        .skel-poster{width:100%;height:450px;margin-bottom:15px;}
-        .skel-title{width:70%;height:30px;margin-bottom:10px;}
-        .skel-text{width:100%;height:20px;margin-bottom:8px;}
-        #app-content{display:none;}
-        .top-close-btn{position:fixed;top:15px;right:15px;z-index:100;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);border:none;width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-        .poster{width:100%;height:auto;display:block;}
-        .content{padding:15px;}
-        .title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
-        .title{font-size:24px;font-weight:800;line-height:1.2;}
-        .original-title{color:var(--hint);font-size:14px;font-style:italic;margin-bottom:10px;}
-        .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;}
-        .badge{background:var(--card);padding:6px 12px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;}
-        .badge.gold{color:var(--gold);}.badge.red{color:#ff5252;}.badge.blue{color:var(--accent);}
-        .action-row{display:flex;gap:10px;margin-bottom:20px;}
-        .btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;display:flex;justify-content:center;align-items:center;gap:8px;cursor:pointer;transition:opacity .2s;}
-        .btn:disabled{opacity:.5;cursor:not-allowed;}
-        .btn-primary{background:var(--accent);color:#fff;}
-        .btn-secondary{background:var(--card);color:#fff;border:1px solid #333;}
-        .btn-toggle{background:transparent;color:var(--hint);border:1px solid var(--hint);}
-        .btn-toggle.active{background:rgba(245,197,24,.1);color:var(--gold);border-color:var(--gold);}
-        .info-box{background:var(--card);border-radius:12px;padding:15px;margin-bottom:20px;}
-        .info-row{display:flex;margin-bottom:10px;font-size:14px;}
-        .info-row:last-child{margin-bottom:0;}
-        .info-label{color:var(--hint);width:120px;flex-shrink:0;}
-        .info-value{color:var(--text);flex:1;}
-        .desc{font-size:15px;line-height:1.5;color:#ccc;position:relative;}
-        .desc.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
-        .read-more{color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;margin-top:5px;display:inline-block;}
-        .backdrops-container{display:flex;overflow-x:auto;gap:10px;margin-bottom:20px;scroll-snap-type:x mandatory;scrollbar-width:none;}
-        .backdrops-container::-webkit-scrollbar{display:none;}
-        .backdrop-img{height:150px;border-radius:8px;scroll-snap-align:start;object-fit:cover;}
-        .seasons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:20px;}
-        .season-card{background:var(--card);padding:10px;border-radius:8px;text-align:center;cursor:pointer;}
-        .season-card .num{font-size:18px;font-weight:700;color:var(--accent);}
-        .season-card .eps{font-size:12px;color:var(--hint);}
-        .similar-container{display:flex;overflow-x:auto;gap:10px;margin-bottom:20px;scroll-snap-type:x mandatory;scrollbar-width:none;}
-        .similar-container::-webkit-scrollbar{display:none;}
-        .similar-card{width:110px;flex-shrink:0;scroll-snap-align:start;cursor:pointer;}
-        .similar-card img{width:100%;border-radius:8px;margin-bottom:5px;}
-        .similar-card .title{font-size:12px;font-weight:600;line-height:1.2;margin-bottom:2px;}
-        .similar-card .year{font-size:11px;color:var(--hint);}
-        .providers-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-        .provider-logo{width:40px;height:40px;border-radius:8px;object-fit:cover;}
-        h3{font-size:18px;margin-bottom:12px;font-weight:700;}
-        .section{margin-bottom:25px;}
-        .fixed-bottom{position:fixed;bottom:0;left:0;right:0;padding:15px;background:linear-gradient(transparent,#101114 30%);}
-        .btn-watch{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;display:flex;justify-content:center;align-items:center;gap:10px;box-shadow:0 4px 15px rgba(46,166,255,.4);cursor:pointer;}
+        :root { 
+            --bg: #0a0a0c; 
+            --card: rgba(30, 32, 40, 0.6); 
+            --text: #ffffff; 
+            --hint: #9ca3af; 
+            --accent: #3b82f6; 
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --gold: #fbbf24;
+            --danger: #ef4444;
+        }
         
-        /* 🚀 СТИЛЬ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ" */
-        .btn-continue {
+        * {
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            padding-bottom: 110px; 
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Скелетон-загрузка */
+        .skeleton { background: linear-gradient(90deg, #1c1d22 25%, #2a2c33 50%, #1c1d22 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 16px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        #skeleton-loader { padding: 20px; }
+        .skel-poster { width: 100%; height: 500px; margin-bottom: 20px; border-radius: 24px; }
+        .skel-title { width: 70%; height: 36px; margin-bottom: 12px; }
+        .skel-text { width: 100%; height: 24px; margin-bottom: 8px; }
+
+        #app-content { display: none; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Кнопка закрытия */
+        .top-close-btn { 
+            position: fixed; top: 15px; right: 15px; z-index: 100; 
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1); 
+            width: 40px; height: 40px; border-radius: 50%; color: white; font-size: 18px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .top-close-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+
+        /* Постер и фон */
+        .poster-container {
+            position: relative;
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(90deg, #2ea6ff 0%, #1e85d6 100%);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(46, 166, 255, 0.3);
-            cursor: pointer;
+            height: 60vh;
+            max-height: 600px;
+            overflow: hidden;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+        }
+        .poster-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; filter: blur(20px) opacity(0.4); transform: scale(1.1); z-index: 0;
+        }
+        .poster-img { 
+            position: relative;
+            width: 100%; height: 100%; object-fit: contain; z-index: 1; 
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+        }
+
+        .content { padding: 0 20px 20px 20px; margin-top: -40px; position: relative; z-index: 2; }
+
+        .title { font-size: 32px; font-weight: 800; line-height: 1.1; letter-spacing: -0.5px; margin-bottom: 4px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .original-title { color: var(--hint); font-size: 15px; font-weight: 500; margin-bottom: 15px; }
+        .tagline { color: var(--gold); font-size: 14px; font-style: italic; margin-bottom: 15px; }
+
+        /* Бейджи */
+        .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .badge { 
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.05); 
+            padding: 6px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; 
+            display: flex; align-items: center; gap: 6px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .badge.gold { color: var(--gold); border-color: rgba(251, 191, 36, 0.3); }
+        .badge.red { color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
+
+        /* Ряд кнопок действий */
+        .action-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+        .btn { 
+            padding: 14px 10px; border: none; border-radius: 16px; font-size: 13px; font-weight: 600; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; 
+            cursor: pointer; transition: transform 0.15s, background 0.2s;
+            background: var(--card); color: white; border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-toggle.active { background: rgba(251, 191, 36, 0.15); color: var(--gold); border-color: rgba(251, 191, 36, 0.4); }
+        .btn span { font-size: 20px; }
+
+        /* Блок с информацией */
+        .info-box { 
+            background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .info-row { display: flex; margin-bottom: 12px; font-size: 14px; align-items: flex-start; }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-label { color: var(--hint); width: 110px; flex-shrink: 0; font-weight: 500; }
+        .info-value { color: var(--text); flex: 1; font-weight: 500; line-height: 1.4; }
+
+        /* Описание */
+        .desc { font-size: 15px; line-height: 1.6; color: #d1d5db; position: relative; letter-spacing: 0.2px; }
+        .desc.collapsed { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        .read-more { color: var(--accent); font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 8px; display: inline-block; }
+
+        /* Заголовки секций */
+        h3 { font-size: 20px; margin-bottom: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px; }
+
+        /* Карусели */
+        .carousel-container { display: flex; overflow-x: auto; gap: 12px; margin-bottom: 24px; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 5px; }
+        .carousel-container::-webkit-scrollbar { display: none; }
+        
+        .backdrop-img { height: 160px; border-radius: 16px; scroll-snap-align: start; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+
+        /* Сезоны */
+        .seasons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .season-card { 
+            background: var(--card); padding: 15px; border-radius: 16px; text-align: center; cursor: pointer; 
+            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             transition: transform 0.2s;
         }
-        .btn-continue:active { transform: scale(0.98); }
+        .season-card:active { transform: scale(0.95); }
+        .season-card .num { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+        .season-card .eps { font-size: 12px; color: var(--hint); font-weight: 500; }
+
+        /* Похожие */
+        .similar-card { width: 130px; flex-shrink: 0; scroll-snap-align: start; transition: transform 0.2s; cursor: pointer; }
+        .similar-card:active { transform: scale(0.95); }
+        .similar-card img { 
+            width: 100%; aspect-ratio: 2/3; border-radius: 16px; margin-bottom: 8px; object-fit: cover;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .similar-card .title { font-size: 13px; font-weight: 600; line-height: 1.2; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .similar-card .year { font-size: 11px; color: var(--hint); font-weight: 500; }
+
+        /* Провайдеры */
+        .providers-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .provider-logo { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        .section { margin-bottom: 30px; }
+
+        /* Плашка "Нет в базе" */
+        #not-in-base { border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+        #not-in-base b { color: #ef4444; }
+
+        /* Фиксированная кнопка снизу */
+        .fixed-bottom { 
+            position: fixed; bottom: 0; left: 0; right: 0; padding: 20px; 
+            background: linear-gradient(to top, var(--bg) 40%, transparent); z-index: 9999;
+        }
+        .btn-watch { 
+            width: 100%; padding: 18px; 
+            background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%); 
+            color: white; border: none; border-radius: 20px; font-size: 16px; font-weight: 700; 
+            display: flex; justify-content: center; align-items: center; gap: 10px; 
+            box-shadow: 0 8px 25px var(--accent-glow); cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-watch:active { transform: scale(0.97); box-shadow: 0 4px 15px var(--accent-glow); }
+
+        /* Плавное появление картинок */
+        img { opacity: 0; transition: opacity 0.3s ease; background: #1c1d22; }
+        img.loaded { opacity: 1; }
     </style>
 </head>
 <body>
@@ -93,33 +194,27 @@
     </div>
 
     <div id="app-content">
-        <img id="poster" class="poster" src="" alt="Постер">
+        <div class="poster-container">
+            <img id="poster-bg" class="poster-bg" src="" alt="">
+            <img id="poster" class="poster-img" src="" alt="Постер">
+        </div>
         
         <div class="content">
             <div class="title-row"><div id="title" class="title"></div></div>
             <div id="originalTitle" class="original-title"></div>
-            <div id="tagline" class="original-title" style="color: var(--hint);"></div>
+            <div id="tagline" class="tagline"></div>
 
             <div class="badges" id="badges-container"></div>
 
-            <!-- 🚀 КНОПКА "ПРОДОЛЖИТЬ" -->
-            <div id="continue-section" style="display: none; margin-bottom: 15px;">
-                <button id="continue-btn" class="btn-continue" onclick="continueWatching()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    <span id="continue-text">Продолжить просмотр</span>
-                </button>
-            </div>
-
-            <!-- 🚀 ПЛАШКА "НЕТ В БАЗЕ" -->
-            <div id="not-in-base" class="info-box" style="display:none;border:1px solid #ff5252;">
+            <div id="not-in-base" class="info-box" style="display:none;">
                 ❌ <b>Этого фильма нет в нашей базе.</b><br>
                 <span style="color:var(--hint);font-size:13px;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
             </div>
 
             <div class="action-row" id="action-row">
-                <button class="btn btn-secondary" onclick="shareLink()">📤 Поделиться</button>
-                <button id="watchlist-btn" class="btn btn-toggle" onclick="toggleWatchlist()">📌 В список</button>
-                <button id="notify-btn" class="btn btn-toggle" onclick="toggleNotify()">🔔 Уведомления</button>
+                <button class="btn btn-toggle" onclick="shareLink()"><span>📤</span>Поделиться</button>
+                <button id="watchlist-btn" class="btn btn-toggle" onclick="toggleWatchlist()"><span>📌</span>В список</button>
+                <button id="notify-btn" class="btn btn-toggle" onclick="toggleNotify()"><span>🔔</span>Уведомления</button>
             </div>
 
             <div class="info-box" id="info-box">
@@ -143,7 +238,7 @@
 
             <div id="backdrops-section" class="section" style="display: none;">
                 <h3>📸 Кадры</h3>
-                <div id="backdrops" class="backdrops-container"></div>
+                <div id="backdrops" class="carousel-container"></div>
             </div>
 
             <div id="seasons-section" class="section" style="display: none;">
@@ -153,20 +248,20 @@
 
             <div id="trailer-section" class="section" style="display: none;">
                 <h3>▶️ Трейлер</h3>
-                <div id="trailer-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
+                <div id="trailer-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
                     <iframe id="trailer-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="" frameborder="0" allowfullscreen></iframe>
                 </div>
             </div>
 
             <div id="similar-section" class="section" style="display: none;">
                 <h3>🎬 Похожие</h3>
-                <div id="similar" class="similar-container"></div>
+                <div id="similar" class="carousel-container"></div>
             </div>
         </div>
 
-        <div class="fixed-bottom" style="z-index: 9999;">
+        <div class="fixed-bottom">
             <button type="button" id="main-action-btn" class="btn-watch" onclick="openInBot()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 Смотреть в боте
             </button>
         </div>
@@ -176,78 +271,21 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // 🚀 Добавляем плавную загрузку картинок
+        document.querySelectorAll('img').forEach(img => {
+            img.onload = () => img.classList.add('loaded');
+        });
+
         const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
-        
         const API_URL = urlParams.get('api') || "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
-        let botUsername = urlParams.get('bot') || "katxlog_bot";
-        
         const userId = tg.initDataUnsafe?.user?.id || urlParams.get('uid') || "0";
 
         let isInWatchlist = false;
         let isMuted = false;
-        let currentTmdb = null;
-        let progressData = null;
-
-        const TMDB_KEY = "ca153f9966020e101edec817d9a01699";
-        const RU_COUNTRIES = {
-            US:"США", GB:"Великобритания", RU:"Россия", FR:"Франция", DE:"Германия", IT:"Италия",
-            ES:"Испания", CA:"Канада", AU:"Австралия", JP:"Япония", KR:"Южная Корея", CN:"Китай",
-            IN:"Индия", BR:"Бразилия", MX:"Мексика", TR:"Турция", UA:"Украина", BY:"Беларусь",
-            KZ:"Казахстан", UZ:"Узбекистан", PL:"Польша", CZ:"Чехия", SE:"Швеция", NO:"Норвегия",
-            DK:"Дания", FI:"Финляндия", NL:"Нидерланды", BE:"Бельгия", CH:"Швейцария", AT:"Австрия",
-            IE:"Ирландия", PT:"Португалия", GR:"Греция", IL:"Израиль", TH:"Таиланд", NZ:"Новая Зеландия",
-            HK:"Гонконг", TW:"Тайвань", AR:"Аргентина", ZA:"ЮАР", HU:"Венгрия", RO:"Румыния"
-        };
-
-        function flagEmoji(iso) {
-            return String(iso).toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
-        }
-
-        async function fetchTmdbDirect(id, kind) {
-            const k = kind === 'm' ? 'movie' : 'tv';
-            const base = `https://api.themoviedb.org/3/${k}/${id}?api_key=${TMDB_KEY}`;
-            const r = await fetch(base + "&language=ru-RU&append_to_response=videos,credits&include_video_language=ru,en,null");
-            const t = await r.json();
-            if (!t || !t.id) throw new Error(t && t.status_message ? t.status_message : "TMDB: нет данных");
-
-            let description = t.overview || "";
-            if (!description) {
-                try { description = (await (await fetch(base + "&language=en-US")).json()).overview || ""; } catch (e) {}
-            }
-
-            let isoList = (t.production_countries || []).map(c => c.iso_3166_1);
-            if (!isoList.length) isoList = t.origin_country || [];
-            const country = isoList.map(iso => flagEmoji(iso) + " " + (RU_COUNTRIES[iso] || iso)).join(", ");
-
-            const vid = ((t.videos && t.videos.results) || [])
-                .find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
-
-            const crew = (t.credits && t.credits.crew) || [];
-            const cast = ((t.credits && t.credits.cast) || []).slice(0, 10).map(c => c.name).join(", ");
-            const director = k === 'movie'
-                ? ((crew.find(c => c.job === "Director") || {}).name || "")
-                : (t.created_by || []).map(c => c.name).join(", ");
-
-            return {
-                ok: true,
-                title: t.title || t.name || "",
-                originalTitle: t.original_title || t.original_name || "",
-                tagline: t.tagline || "",
-                year: (t.release_date || t.first_air_date || "").substring(0, 4),
-                poster: t.poster_path ? "https://image.tmdb.org/t/p/w500" + t.poster_path : "",
-                country: country,
-                countryRaw: isoList.map(iso => RU_COUNTRIES[iso] || iso).join(", "),
-                genres: (t.genres || []).map(g => g.name).join(", "),
-                description: description,
-                trailer: vid ? "https://www.youtube.com/watch?v=" + vid.key : "",
-                ratingTMDB: t.vote_average ? String(Math.round(t.vote_average * 10) / 10) : "",
-                ratingKP: "",
-                cast: cast,
-                director: director
-            };
-        }
+        let botUsername = urlParams.get('bot') || "katxlog_bot";
+        let currentTmdb = null; 
 
         async function loadBasic() {
             try {
@@ -257,7 +295,12 @@
                 if (!data.ok) throw new Error(data.error || "Unknown error");
 
                 document.title = data.title;
-                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
+                
+                // Устанавливаем постер и фон
+                const defaultImg = 'https://via.placeholder.com/500x750?text=No+Poster';
+                document.getElementById('poster').src = data.poster || defaultImg;
+                document.getElementById('poster-bg').src = data.poster || defaultImg;
+                
                 document.getElementById('title').textContent = data.title;
                 
                 let badgesHtml = `<span class="badge">${type === 'movie' ? '🍿 Фильм' : '📺 Сериал'}</span>`;
@@ -286,26 +329,22 @@
                     }
                 }
 
+                if (!urlParams.get('bot') && data.botUsername) {
+                    botUsername = data.botUsername;
+                }
+                
                 isInWatchlist = !!data.inWatchlist;
                 isMuted = !!data.isMuted;
                 
                 updateWatchlistUI();
                 updateNotifyUI();
 
-                // 🚀 ОТОБРАЖАЕМ КНОПКУ "ПРОДОЛЖИТЬ" (если это сериал и есть прогресс)
-                if (data.progress && type === 'series') {
-                    progressData = data.progress;
-                    document.getElementById('continue-text').textContent = `Продолжить (Сезон ${progressData.season}, Серия ${progressData.episode})`;
-                    document.getElementById('continue-section').style.display = 'block';
-                } else {
-                    document.getElementById('continue-section').style.display = 'none';
-                }
-
-                document.getElementById('action-row').style.display = 'flex';
+                document.getElementById('action-row').style.display = 'grid';
                 document.getElementById('not-in-base').style.display = 'none';
                 const bottomBtn = document.getElementById('main-action-btn');
-                bottomBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Смотреть в боте`;
+                bottomBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Смотреть в боте`;
                 bottomBtn.onclick = openInBot;
+                bottomBtn.style.background = ''; // Сброс стиля, если был "Оставить заявку"
 
                 document.getElementById('skeleton-loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -407,14 +446,14 @@
 
         function updateWatchlistUI() {
             const btn = document.getElementById('watchlist-btn');
-            if (isInWatchlist) { btn.classList.add('active'); btn.innerHTML = '✅ В списке'; }
-            else { btn.classList.remove('active'); btn.innerHTML = '📌 В список'; }
+            if (isInWatchlist) { btn.classList.add('active'); btn.innerHTML = '<span>✅</span>В списке'; }
+            else { btn.classList.remove('active'); btn.innerHTML = '<span>📌</span>В список'; }
         }
 
         function updateNotifyUI() {
             const btn = document.getElementById('notify-btn');
-            if (isMuted) { btn.classList.remove('active'); btn.innerHTML = '🔕 Выкл.'; }
-            else { btn.classList.add('active'); btn.innerHTML = '🔔 Увед.'; }
+            if (isMuted) { btn.classList.remove('active'); btn.innerHTML = '<span>🔕</span>Выкл.'; }
+            else { btn.classList.add('active'); btn.innerHTML = '<span>🔔</span>Увед.'; }
         }
 
         async function toggleWatchlist() {
@@ -455,11 +494,13 @@
             finally { btn.disabled = false; btn.style.opacity = '1'; }
         }
 
-        async function shareLink() {
+        function shareLink() {
             try {
                 try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
+                let cleanBotName = String(botUsername).replace('@', '').trim();
+                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
                 let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
-                let botLink = `https://t.me/${botUsername}?start=${startParam}`;
+                let botLink = `https://t.me/${cleanBotName}?start=${startParam}`;
                 let title = document.getElementById('title').textContent;
                 tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`);
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
@@ -467,33 +508,18 @@
 
         function openInBot() {
             try {
-                if (!rowIndex) {
-                    tg.openTelegramLink(`https://t.me/${botUsername}`);
-                    setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
-                    return;
-                }
+                let cleanBotName = String(botUsername).replace('@', '').trim();
+                if (cleanBotName === "undefined" || !cleanBotName) cleanBotName = "katxlog_bot";
                 let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
-                tg.openTelegramLink(`https://t.me/${botUsername}?start=${startParam}`);
-                setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+                tg.openTelegramLink(`https://t.me/${cleanBotName}?start=${startParam}`);
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
-        }
-
-        // 🚀 ФУНКЦИЯ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ"
-        function continueWatching() {
-            if (!progressData) return;
-            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
-            
-            // Отправляем в бота команду play_ (бот сам подтянет последнюю серию)
-            const startParam = `play_${rowIndex}`;
-            tg.openTelegramLink(`https://t.me/${botUsername}?start=${startParam}`);
-            setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
         function openSimilar(id, kind, localRow, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch (e) {}
             if (localRow && localRow > 0) {
                 const newType = kind === 'm' ? 'movie' : 'series';
-                window.location.search = `?rowIndex=${localRow}&type=${newType}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
+                window.location.search = `?rowIndex=${localRow}&type=${newType}`;
             } else {
                 loadTmdbCard(id, kind, title, year);
             }
@@ -504,6 +530,7 @@
             btn.disabled = false;
             btn.innerHTML = '📩 Оставить заявку';
             btn.onclick = requestMovie;
+            btn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
         }
 
         async function loadTmdbCard(id, kind, title, year) {
@@ -514,6 +541,7 @@
             document.getElementById('originalTitle').textContent = '';
             document.getElementById('tagline').textContent = '';
             document.getElementById('poster').src = '';
+            document.getElementById('poster-bg').src = '';
             document.getElementById('badges-container').innerHTML = `<span class="badge">⏳ Загрузка...</span>`;
             document.getElementById('description').textContent = 'Загрузка описания...';
             document.getElementById('description').style.display = 'block';
@@ -521,7 +549,7 @@
             document.getElementById('country').innerHTML = "—";
             document.getElementById('genres').textContent = "—";
             ['director-row', 'cast-row', 'companies-row'].forEach(i => document.getElementById(i).style.display = 'none');
-            ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container', 'continue-section']
+            ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container']
                 .forEach(i => document.getElementById(i).style.display = 'none');
             document.getElementById('trailer-iframe').src = '';
             document.getElementById('action-row').style.display = 'none';
@@ -532,35 +560,22 @@
             bottomBtn.disabled = true;
 
             try {
-                let data = null;
-                try { data = await fetchTmdbDirect(id, kind); } 
-                catch (e1) { console.warn("TMDB direct:", e1); }
+                const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
+                const data = JSON.parse(await res.text());
 
-                if (!data) {
-                    const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
-                    data = JSON.parse(await res.text());
-                    if (data.ok && data.inBase) {
-                        window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
-                        return;
-                    }
-                }
-
-                if (!data || !data.ok) throw new Error((data && data.error) || "Нет данных");
-                if (data.inBase) {
-                    window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
+                if (data.ok && data.inBase) {
+                    window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}`;
                     return;
                 }
+                if (!data.ok) throw new Error(data.error || "Нет данных");
 
                 currentTmdb.title = data.title || title;
                 currentTmdb.year = data.year || year;
                 currentTmdb.countryRaw = data.countryRaw || "";
 
                 document.title = currentTmdb.title;
-                
-                const posterEl = document.getElementById('poster');
-                posterEl.style.display = data.poster ? 'block' : 'none';
-                posterEl.src = data.poster || '';
-
+                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
+                document.getElementById('poster-bg').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
                 document.getElementById('title').textContent = currentTmdb.title;
                 document.getElementById('originalTitle').textContent = data.originalTitle || '';
                 document.getElementById('tagline').textContent = data.tagline ? `«${data.tagline}»` : '';
@@ -574,7 +589,6 @@
 
                 document.getElementById('country').innerHTML = data.country || "—";
                 document.getElementById('genres').textContent = data.genres || "—";
-                
                 if (data.director) { document.getElementById('director').textContent = data.director; document.getElementById('director-row').style.display = 'flex'; }
                 if (data.cast) { document.getElementById('cast').textContent = data.cast; document.getElementById('cast-row').style.display = 'flex'; }
 
@@ -585,7 +599,7 @@
                     document.getElementById('readMoreBtn').textContent = 'Читать далее';
                     document.getElementById('readMoreBtn').style.display = 'inline-block';
                 } else {
-                    document.getElementById('description').textContent = 'Описание пока отсутствует.';
+                    document.getElementById('description').style.display = 'none';
                 }
 
                 if (data.trailer) {
@@ -601,7 +615,7 @@
                     `<span class="badge">${kind === 'm' ? '🍿 Фильм' : '📺 Сериал'}</span>` +
                     (year ? `<span class="badge">📅 ${year}</span>` : '') +
                     `<span class="badge red">❌ Нет в базе</span>`;
-                document.getElementById('description').textContent = 'Не удалось загрузить данные (' + e.message + '). Вы всё равно можете оставить заявку.';
+                document.getElementById('description').textContent = 'Подробности временно недоступны, но вы можете оставить заявку.';
             }
             showRequestButton();
         }
@@ -609,16 +623,22 @@
         async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
-            
-            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
-
             const btn = document.getElementById('main-action-btn');
+            btn.disabled = true;
             btn.innerHTML = '⏳ Подготовка...';
-
-            // Передаем TMDB ID напрямую (rqm_ID для фильма, rqt_ID для сериала)
-            const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
-            tg.openTelegramLink(`https://t.me/${botUsername}?start=${prefix}_${c.id}`);
-            setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+            try {
+                const q = JSON.stringify({ name: c.title, year: c.year || "", country: c.countryRaw || "" });
+                const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(q)}&_t=${Date.now()}`);
+                const data = JSON.parse(await res.text());
+                if (!(data.ok && data.id)) throw new Error("Не удалось сохранить запрос");
+                const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+                tg.openTelegramLink(`https://t.me/${bot}?start=${c.kind === 'm' ? 'reqm' : 'reqs'}_${data.id}`);
+                setTimeout(() => { tg.close(); }, 500);
+            } catch (e) {
+                tg.showAlert("Ошибка: " + e.message);
+            } finally {
+                showRequestButton();
+            }
         }
 
         function closeApp() { tg.close(); }
