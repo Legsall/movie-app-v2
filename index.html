@@ -6,168 +6,79 @@
     <title>Загрузка...</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { 
-            --bg: #09090b; 
-            --surface: #18181b; 
-            --surface-hover: #27272a;
-            --text: #fafafa; 
-            --text-muted: #a1a1aa; 
-            --accent: #3b82f6; 
-            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-            --gold: #fbbf24;
-            --danger: #ef4444;
-            --radius-lg: 24px;
-            --radius-md: 16px;
-            --radius-sm: 12px;
-        }
+        :root { --bg:#101114;--card:#1c1d22;--text:#fff;--hint:#8b8e96;--accent:#2ea6ff;--gold:#f5c518; }
+        *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+        body{background:var(--bg);color:var(--text);padding-bottom:90px;overflow-x:hidden;}
+        .skeleton{background:linear-gradient(90deg,#1c1d22 25%,#2a2c33 50%,#1c1d22 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+        @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+        #skeleton-loader{padding:15px;}
+        .skel-poster{width:100%;height:450px;margin-bottom:15px;}
+        .skel-title{width:70%;height:30px;margin-bottom:10px;}
+        .skel-text{width:100%;height:20px;margin-bottom:8px;}
+        #app-content{display:none;}
+        .top-close-btn{position:fixed;top:15px;right:15px;z-index:100;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);border:none;width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+        .poster{width:100%;height:auto;display:block;}
+        .content{padding:15px;}
+        .title-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+        .title{font-size:24px;font-weight:800;line-height:1.2;}
+        .original-title{color:var(--hint);font-size:14px;font-style:italic;margin-bottom:10px;}
+        .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px;}
+        .badge{background:var(--card);padding:6px 12px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:5px;}
+        .badge.gold{color:var(--gold);}.badge.red{color:#ff5252;}.badge.blue{color:var(--accent);}
+        .action-row{display:flex;gap:10px;margin-bottom:20px;}
+        .btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;display:flex;justify-content:center;align-items:center;gap:8px;cursor:pointer;transition:opacity .2s;}
+        .btn:disabled{opacity:.5;cursor:not-allowed;}
+        .btn-primary{background:var(--accent);color:#fff;}
+        .btn-secondary{background:var(--card);color:#fff;border:1px solid #333;}
+        .btn-toggle{background:transparent;color:var(--hint);border:1px solid var(--hint);}
+        .btn-toggle.active{background:rgba(245,197,24,.1);color:var(--gold);border-color:var(--gold);}
+        .info-box{background:var(--card);border-radius:12px;padding:15px;margin-bottom:20px;}
+        .info-row{display:flex;margin-bottom:10px;font-size:14px;}
+        .info-row:last-child{margin-bottom:0;}
+        .info-label{color:var(--hint);width:120px;flex-shrink:0;}
+        .info-value{color:var(--text);flex:1;}
+        .desc{font-size:15px;line-height:1.5;color:#ccc;position:relative;}
+        .desc.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+        .read-more{color:var(--accent);font-weight:600;font-size:14px;cursor:pointer;margin-top:5px;display:inline-block;}
+        .backdrops-container{display:flex;overflow-x:auto;gap:10px;margin-bottom:20px;scroll-snap-type:x mandatory;scrollbar-width:none;}
+        .backdrops-container::-webkit-scrollbar{display:none;}
+        .backdrop-img{height:150px;border-radius:8px;scroll-snap-align:start;object-fit:cover;}
+        .seasons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:20px;}
+        .season-card{background:var(--card);padding:10px;border-radius:8px;text-align:center;cursor:pointer;}
+        .season-card .num{font-size:18px;font-weight:700;color:var(--accent);}
+        .season-card .eps{font-size:12px;color:var(--hint);}
+        .similar-container{display:flex;overflow-x:auto;gap:10px;margin-bottom:20px;scroll-snap-type:x mandatory;scrollbar-width:none;}
+        .similar-container::-webkit-scrollbar{display:none;}
+        .similar-card{width:110px;flex-shrink:0;scroll-snap-align:start;cursor:pointer;}
+        .similar-card img{width:100%;border-radius:8px;margin-bottom:5px;}
+        .similar-card .title{font-size:12px;font-weight:600;line-height:1.2;margin-bottom:2px;}
+        .similar-card .year{font-size:11px;color:var(--hint);}
+        .providers-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+        .provider-logo{width:40px;height:40px;border-radius:8px;object-fit:cover;}
+        h3{font-size:18px;margin-bottom:12px;font-weight:700;}
+        .section{margin-bottom:25px;}
+        .fixed-bottom{position:fixed;bottom:0;left:0;right:0;padding:15px;background:linear-gradient(transparent,#101114 30%);}
+        .btn-watch{width:100%;padding:16px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;display:flex;justify-content:center;align-items:center;gap:10px;box-shadow:0 4px 15px rgba(46,166,255,.4);cursor:pointer;}
         
-        * {
-            box-sizing: border-box; margin: 0; padding: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body { 
-            background-color: var(--bg); color: var(--text); 
-            padding-bottom: 100px; overflow-x: hidden;
-            line-height: 1.5; font-size: 15px;
-        }
-
-        /* Скелетон-загрузка */
-        .skeleton { background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-md); }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        #skeleton-loader { padding: 20px; }
-        .skel-poster { width: 100%; height: 60vh; margin-bottom: 20px; border-radius: var(--radius-lg); }
-        .skel-title { width: 60%; height: 40px; margin-bottom: 12px; }
-        .skel-text { width: 100%; height: 20px; margin-bottom: 8px; }
-
-        #app-content { display: none; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Кнопка закрытия */
-        .top-close-btn { 
-            position: fixed; top: 20px; right: 20px; z-index: 100; 
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.15); 
-            width: 36px; height: 36px; border-radius: 50%; color: white; font-size: 16px; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        /* 🚀 СТИЛЬ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ" */
+        .btn-continue {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #2ea6ff 0%, #1e85d6 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(46, 166, 255, 0.3);
+            cursor: pointer;
             transition: transform 0.2s;
         }
-        .top-close-btn:active { transform: scale(0.9); }
-
-        /* Постер (Hero) */
-        .hero-container {
-            position: relative;
-            width: 100%;
-            height: 65vh; /* Большой постер */
-            max-height: 600px;
-            overflow: hidden;
-        }
-        .hero-img {
-            width: 100%; height: 100%; object-fit: cover; object-position: top center;
-            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-        }
-        
-        .content { padding: 0 20px 20px 20px; margin-top: -60px; position: relative; z-index: 10; }
-
-        /* Заголовки */
-        .title { font-size: 32px; font-weight: 800; line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 6px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-        .original-title { color: var(--text-muted); font-size: 15px; font-weight: 500; margin-bottom: 12px; }
-        .tagline { color: var(--text-muted); font-size: 15px; font-style: italic; margin-bottom: 16px; opacity: 0.8; }
-
-        /* Бейджи */
-        .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-        .badge { 
-            background: var(--surface); padding: 6px 12px; border-radius: var(--radius-sm); 
-            font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .badge.gold { color: var(--gold); }
-        .badge.red { color: #f87171; }
-
-        /* Сетка кнопок действий */
-        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 30px; }
-        .action-btn { 
-            background: var(--surface); border: 1px solid rgba(255,255,255,0.05); color: var(--text);
-            padding: 12px 8px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            cursor: pointer; transition: all 0.2s;
-        }
-        .action-btn:active { background: var(--surface-hover); transform: scale(0.96); }
-        .action-btn.active { background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.3); color: var(--gold); }
-        .action-btn span { font-size: 22px; }
-
-        /* Информационный блок */
-        .info-card { 
-            background: var(--surface); border-radius: var(--radius-lg); padding: 20px; 
-            margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.03);
-        }
-        .info-row { display: flex; margin-bottom: 14px; font-size: 14px; align-items: flex-start; }
-        .info-row:last-child { margin-bottom: 0; }
-        .info-label { color: var(--text-muted); width: 100px; flex-shrink: 0; font-weight: 500; }
-        .info-value { color: var(--text); flex: 1; font-weight: 500; }
-
-        /* Заголовки секций */
-        .section { margin-bottom: 35px; display: none; }
-        .section-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-        /* Описание */
-        .desc { font-size: 15px; line-height: 1.6; color: #d4d4d8; }
-        .desc.collapsed { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-        .read-more { color: var(--accent); font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 8px; display: inline-block; }
-
-        /* Карусели (Кадры, Похожие) */
-        .carousel { 
-            display: flex; overflow-x: auto; gap: 12px; 
-            scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px;
-        }
-        .carousel::-webkit-scrollbar { display: none; }
-        
-        .backdrop-img { height: 160px; border-radius: var(--radius-md); scroll-snap-align: start; object-fit: cover; }
-        
-        .similar-card { width: 120px; flex-shrink: 0; scroll-snap-align: start; cursor: pointer; transition: transform 0.2s; }
-        .similar-card:active { transform: scale(0.95); }
-        .similar-card img { width: 100%; aspect-ratio: 2/3; border-radius: var(--radius-sm); margin-bottom: 8px; object-fit: cover; background: var(--surface); }
-        .similar-card .title { font-size: 13px; font-weight: 600; line-height: 1.2; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .similar-card .year { font-size: 12px; color: var(--text-muted); }
-
-        /* Сетка сезонов */
-        .seasons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
-        .season-card { 
-            background: var(--surface); padding: 16px 12px; border-radius: var(--radius-md); text-align: center; 
-            border: 1px solid rgba(255,255,255,0.03);
-        }
-        .season-card .num { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-        .season-card .eps { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-
-        /* Стриминги */
-        .providers-flex { display: flex; gap: 12px; flex-wrap: wrap; }
-        .provider-logo { width: 52px; height: 52px; border-radius: var(--radius-md); object-fit: cover; }
-
-        /* Плашка "Нет в базе" */
-        #not-in-base { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 24px; color: #fca5a5; display: none; }
-
-        /* Трейлер */
-        .trailer-box { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); }
-        .trailer-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-
-        /* Фиксированная кнопка снизу */
-        .fixed-bottom { 
-            position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 20px; 
-            background: linear-gradient(to top, var(--bg) 60%, transparent); z-index: 9999;
-        }
-        .btn-watch { 
-            width: 100%; padding: 18px; background: var(--accent-gradient); color: white; 
-            border: none; border-radius: var(--radius-md); font-size: 16px; font-weight: 700; 
-            display: flex; justify-content: center; align-items: center; gap: 10px; 
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3); cursor: pointer; transition: transform 0.2s;
-        }
-        .btn-watch:active { transform: scale(0.97); }
-
-        /* Плавная загрузка картинок */
-        img { opacity: 0; transition: opacity 0.4s ease; }
-        img.loaded { opacity: 1; }
+        .btn-continue:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -182,75 +93,80 @@
     </div>
 
     <div id="app-content">
-        <div class="hero-container">
-            <img id="poster" class="hero-img" src="" alt="Постер">
-        </div>
+        <img id="poster" class="poster" src="" alt="Постер">
         
         <div class="content">
-            <div id="title" class="title"></div>
+            <div class="title-row"><div id="title" class="title"></div></div>
             <div id="originalTitle" class="original-title"></div>
-            <div id="tagline" class="tagline"></div>
+            <div id="tagline" class="original-title" style="color: var(--hint);"></div>
 
             <div class="badges" id="badges-container"></div>
 
-            <div id="not-in-base">
+            <!-- 🚀 КНОПКА "ПРОДОЛЖИТЬ" -->
+            <div id="continue-section" style="display: none; margin-bottom: 15px;">
+                <button id="continue-btn" class="btn-continue" onclick="continueWatching()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span id="continue-text">Продолжить просмотр</span>
+                </button>
+            </div>
+
+            <!-- 🚀 ПЛАШКА "НЕТ В БАЗЕ" -->
+            <div id="not-in-base" class="info-box" style="display:none;border:1px solid #ff5252;">
                 ❌ <b>Этого фильма нет в нашей базе.</b><br>
-                <span style="font-size:13px; opacity:0.8;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
+                <span style="color:var(--hint);font-size:13px;">Нажмите «Оставить заявку» внизу, и мы постараемся его добавить.</span>
             </div>
 
-            <div class="action-grid" id="action-row">
-                <button class="action-btn" onclick="shareLink()"><span>📤</span>Поделиться</button>
-                <button id="watchlist-btn" class="action-btn" onclick="toggleWatchlist()"><span>📌</span>В список</button>
-                <button id="notify-btn" class="action-btn" onclick="toggleNotify()"><span>🔔</span>Уведомления</button>
+            <div class="action-row" id="action-row">
+                <button class="btn btn-secondary" onclick="shareLink()">📤 Поделиться</button>
+                <button id="watchlist-btn" class="btn btn-toggle" onclick="toggleWatchlist()">📌 В список</button>
+                <button id="notify-btn" class="btn btn-toggle" onclick="toggleNotify()">🔔 Уведомления</button>
             </div>
 
-            <div class="info-card" id="info-box">
-                <div class="info-row"><div class="info-label">Страна</div><div id="country" class="info-value"></div></div>
-                <div class="info-row"><div class="info-label">Жанры</div><div id="genres" class="info-value"></div></div>
-                <div class="info-row" id="director-row"><div class="info-label">Создатели</div><div id="director" class="info-value"></div></div>
-                <div class="info-row" id="cast-row"><div class="info-label">В ролях</div><div id="cast" class="info-value"></div></div>
-                <div class="info-row" id="companies-row"><div class="info-label">Студии</div><div id="companies" class="info-value"></div></div>
+            <div class="info-box" id="info-box">
+                <div class="info-row"><div class="info-label">🌍 Страна:</div><div id="country" class="info-value"></div></div>
+                <div class="info-row"><div class="info-label">🎭 Жанры:</div><div id="genres" class="info-value"></div></div>
+                <div class="info-row" id="director-row"><div class="info-label">🎬 Создатели:</div><div id="director" class="info-value"></div></div>
+                <div class="info-row" id="cast-row"><div class="info-label">🎭 В ролях:</div><div id="cast" class="info-value"></div></div>
+                <div class="info-row" id="companies-row"><div class="info-label">🏢 Студии:</div><div id="companies" class="info-value"></div></div>
             </div>
 
-            <!-- Блок "О фильме" всегда показывается -->
-            <div class="section" style="display: block;">
-                <div class="section-title">📝 О фильме</div>
+            <div id="providers-container" class="section" style="display: none;">
+                <h3>Где смотреть</h3>
+                <div id="providers" class="providers-row"></div>
+            </div>
+
+            <div class="section">
+                <h3>📝 О фильме</h3>
                 <div id="description" class="desc collapsed"></div>
                 <span id="readMoreBtn" class="read-more" onclick="toggleReadMore()">Читать далее</span>
             </div>
 
-            <!-- Умные секции (скроются, если нет данных) -->
-            <div id="providers-section" class="section">
-                <div class="section-title">Где смотреть</div>
-                <div id="providers" class="providers-flex"></div>
+            <div id="backdrops-section" class="section" style="display: none;">
+                <h3>📸 Кадры</h3>
+                <div id="backdrops" class="backdrops-container"></div>
             </div>
 
-            <div id="backdrops-section" class="section">
-                <div class="section-title">📸 Кадры</div>
-                <div id="backdrops" class="carousel"></div>
-            </div>
-
-            <div id="seasons-section" class="section">
-                <div class="section-title">📺 Сезоны</div>
+            <div id="seasons-section" class="section" style="display: none;">
+                <h3>📺 Сезоны</h3>
                 <div id="seasons" class="seasons-grid"></div>
             </div>
 
-            <div id="trailer-section" class="section">
-                <div class="section-title">▶️ Трейлер</div>
-                <div class="trailer-box">
-                    <iframe id="trailer-iframe" src="" frameborder="0" allowfullscreen></iframe>
+            <div id="trailer-section" class="section" style="display: none;">
+                <h3>▶️ Трейлер</h3>
+                <div id="trailer-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px;">
+                    <iframe id="trailer-iframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="" frameborder="0" allowfullscreen></iframe>
                 </div>
             </div>
 
-            <div id="similar-section" class="section">
-                <div class="section-title">🎬 Похожие</div>
-                <div id="similar" class="carousel"></div>
+            <div id="similar-section" class="section" style="display: none;">
+                <h3>🎬 Похожие</h3>
+                <div id="similar" class="similar-container"></div>
             </div>
         </div>
 
-        <div class="fixed-bottom">
+        <div class="fixed-bottom" style="z-index: 9999;">
             <button type="button" id="main-action-btn" class="btn-watch" onclick="openInBot()">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 Смотреть в боте
             </button>
         </div>
@@ -260,20 +176,78 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        document.querySelectorAll('img').forEach(img => {
-            img.onload = () => img.classList.add('loaded');
-        });
-
         const urlParams = new URLSearchParams(window.location.search);
         const rowIndex = urlParams.get('rowIndex');
         const type = urlParams.get('type') || 'movie';
+        
         const API_URL = urlParams.get('api') || "https://script.google.com/macros/s/AKfycbznYiEClrr5hBugCfF4TEGE5upb_uQJaxIbItsQklybzJ3B1ElAaxgC3mQ7dW1VbD28qA/exec";
+        let botUsername = urlParams.get('bot') || "katxlog_bot";
+        
         const userId = tg.initDataUnsafe?.user?.id || urlParams.get('uid') || "0";
 
         let isInWatchlist = false;
         let isMuted = false;
-        let botUsername = urlParams.get('bot') || "katxlog_bot";
-        let currentTmdb = null; 
+        let currentTmdb = null;
+        let progressData = null;
+
+        const TMDB_KEY = "ca153f9966020e101edec817d9a01699";
+        const RU_COUNTRIES = {
+            US:"США", GB:"Великобритания", RU:"Россия", FR:"Франция", DE:"Германия", IT:"Италия",
+            ES:"Испания", CA:"Канада", AU:"Австралия", JP:"Япония", KR:"Южная Корея", CN:"Китай",
+            IN:"Индия", BR:"Бразилия", MX:"Мексика", TR:"Турция", UA:"Украина", BY:"Беларусь",
+            KZ:"Казахстан", UZ:"Узбекистан", PL:"Польша", CZ:"Чехия", SE:"Швеция", NO:"Норвегия",
+            DK:"Дания", FI:"Финляндия", NL:"Нидерланды", BE:"Бельгия", CH:"Швейцария", AT:"Австрия",
+            IE:"Ирландия", PT:"Португалия", GR:"Греция", IL:"Израиль", TH:"Таиланд", NZ:"Новая Зеландия",
+            HK:"Гонконг", TW:"Тайвань", AR:"Аргентина", ZA:"ЮАР", HU:"Венгрия", RO:"Румыния"
+        };
+
+        function flagEmoji(iso) {
+            return String(iso).toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+        }
+
+        async function fetchTmdbDirect(id, kind) {
+            const k = kind === 'm' ? 'movie' : 'tv';
+            const base = `https://api.themoviedb.org/3/${k}/${id}?api_key=${TMDB_KEY}`;
+            const r = await fetch(base + "&language=ru-RU&append_to_response=videos,credits&include_video_language=ru,en,null");
+            const t = await r.json();
+            if (!t || !t.id) throw new Error(t && t.status_message ? t.status_message : "TMDB: нет данных");
+
+            let description = t.overview || "";
+            if (!description) {
+                try { description = (await (await fetch(base + "&language=en-US")).json()).overview || ""; } catch (e) {}
+            }
+
+            let isoList = (t.production_countries || []).map(c => c.iso_3166_1);
+            if (!isoList.length) isoList = t.origin_country || [];
+            const country = isoList.map(iso => flagEmoji(iso) + " " + (RU_COUNTRIES[iso] || iso)).join(", ");
+
+            const vid = ((t.videos && t.videos.results) || [])
+                .find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
+
+            const crew = (t.credits && t.credits.crew) || [];
+            const cast = ((t.credits && t.credits.cast) || []).slice(0, 10).map(c => c.name).join(", ");
+            const director = k === 'movie'
+                ? ((crew.find(c => c.job === "Director") || {}).name || "")
+                : (t.created_by || []).map(c => c.name).join(", ");
+
+            return {
+                ok: true,
+                title: t.title || t.name || "",
+                originalTitle: t.original_title || t.original_name || "",
+                tagline: t.tagline || "",
+                year: (t.release_date || t.first_air_date || "").substring(0, 4),
+                poster: t.poster_path ? "https://image.tmdb.org/t/p/w500" + t.poster_path : "",
+                country: country,
+                countryRaw: isoList.map(iso => RU_COUNTRIES[iso] || iso).join(", "),
+                genres: (t.genres || []).map(g => g.name).join(", "),
+                description: description,
+                trailer: vid ? "https://www.youtube.com/watch?v=" + vid.key : "",
+                ratingTMDB: t.vote_average ? String(Math.round(t.vote_average * 10) / 10) : "",
+                ratingKP: "",
+                cast: cast,
+                director: director
+            };
+        }
 
         async function loadBasic() {
             try {
@@ -283,9 +257,7 @@
                 if (!data.ok) throw new Error(data.error || "Unknown error");
 
                 document.title = data.title;
-                
-                const defaultImg = 'https://via.placeholder.com/500x750?text=No+Poster';
-                document.getElementById('poster').src = data.poster || defaultImg;
+                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
                 document.getElementById('title').textContent = data.title;
                 
                 let badgesHtml = `<span class="badge">${type === 'movie' ? '🍿 Фильм' : '📺 Сериал'}</span>`;
@@ -294,11 +266,13 @@
                 if (data.ratingKP) badgesHtml += `<span class="badge red">⭐ КП: ${data.ratingKP}</span>`;
                 document.getElementById('badges-container').innerHTML = badgesHtml;
 
-                document.getElementById('country').textContent = data.country || "—";
+                document.getElementById('country').innerHTML = data.country || "—";
                 document.getElementById('genres').textContent = data.genres || "—";
                 
                 if (data.description) {
                     document.getElementById('description').textContent = data.description;
+                    document.getElementById('description').style.display = 'block';
+                    document.getElementById('readMoreBtn').style.display = 'inline-block';
                 } else {
                     document.getElementById('description').style.display = 'none';
                     document.getElementById('readMoreBtn').style.display = 'none';
@@ -312,21 +286,26 @@
                     }
                 }
 
-                if (!urlParams.get('bot') && data.botUsername) botUsername = data.botUsername;
-                
                 isInWatchlist = !!data.inWatchlist;
                 isMuted = !!data.isMuted;
                 
                 updateWatchlistUI();
                 updateNotifyUI();
 
-                document.getElementById('action-row').style.display = 'grid';
+                // 🚀 ОТОБРАЖАЕМ КНОПКУ "ПРОДОЛЖИТЬ" (если это сериал и есть прогресс)
+                if (data.progress && type === 'series') {
+                    progressData = data.progress;
+                    document.getElementById('continue-text').textContent = `Продолжить (Сезон ${progressData.season}, Серия ${progressData.episode})`;
+                    document.getElementById('continue-section').style.display = 'block';
+                } else {
+                    document.getElementById('continue-section').style.display = 'none';
+                }
+
+                document.getElementById('action-row').style.display = 'flex';
                 document.getElementById('not-in-base').style.display = 'none';
-                
                 const bottomBtn = document.getElementById('main-action-btn');
-                bottomBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Смотреть в боте`;
+                bottomBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Смотреть в боте`;
                 bottomBtn.onclick = openInBot;
-                bottomBtn.style.background = 'var(--accent-gradient)'; 
 
                 document.getElementById('skeleton-loader').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
@@ -365,7 +344,6 @@
                 }
                 document.getElementById('badges-container').innerHTML = badgesHtml;
 
-                // Умное скрытие пустых строк
                 if (d.director) document.getElementById('director').textContent = d.director;
                 else document.getElementById('director-row').style.display = 'none';
 
@@ -378,9 +356,8 @@
                     document.getElementById('companies-row').style.display = 'none';
                 }
 
-                // 🚀 УМНЫЕ СЕКЦИИ (скрываем заголовок, если нет контента)
                 if (d.watchProviders && d.watchProviders.length > 0) {
-                    document.getElementById('providers-section').style.display = 'block';
+                    document.getElementById('providers-container').style.display = 'block';
                     document.getElementById('providers').innerHTML = d.watchProviders.map(p => 
                         `<img src="${p.logo}" class="provider-logo" title="${p.name}" alt="${p.name}">`
                     ).join('');
@@ -430,19 +407,19 @@
 
         function updateWatchlistUI() {
             const btn = document.getElementById('watchlist-btn');
-            if (isInWatchlist) { btn.classList.add('active'); btn.innerHTML = '<span>✅</span>В списке'; }
-            else { btn.classList.remove('active'); btn.innerHTML = '<span>📌</span>В список'; }
+            if (isInWatchlist) { btn.classList.add('active'); btn.innerHTML = '✅ В списке'; }
+            else { btn.classList.remove('active'); btn.innerHTML = '📌 В список'; }
         }
 
         function updateNotifyUI() {
             const btn = document.getElementById('notify-btn');
-            if (isMuted) { btn.classList.remove('active'); btn.innerHTML = '<span>🔕</span>Выкл.'; }
-            else { btn.classList.add('active'); btn.innerHTML = '<span>🔔</span>Увед.'; }
+            if (isMuted) { btn.classList.remove('active'); btn.innerHTML = '🔕 Выкл.'; }
+            else { btn.classList.add('active'); btn.innerHTML = '🔔 Увед.'; }
         }
 
         async function toggleWatchlist() {
             const btn = document.getElementById('watchlist-btn');
-            if (!userId || userId === "0") { tg.showAlert("❌ Не удалось определить ваш Telegram ID."); return; }
+            if (!userId || userId === "0" || userId === 0) { tg.showAlert("❌ Не удалось определить ваш Telegram ID."); return; }
             btn.disabled = true; btn.style.opacity = '0.5';
             try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
             try {
@@ -461,7 +438,7 @@
 
         async function toggleNotify() {
             const btn = document.getElementById('notify-btn');
-            if (!userId || userId === "0") { tg.showAlert("❌ Не удалось определить ваш Telegram ID."); return; }
+            if (!userId || userId === "0" || userId === 0) { tg.showAlert("❌ Не удалось определить ваш Telegram ID."); return; }
             btn.disabled = true; btn.style.opacity = '0.5';
             try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
             try {
@@ -478,12 +455,11 @@
             finally { btn.disabled = false; btn.style.opacity = '1'; }
         }
 
-        function shareLink() {
+        async function shareLink() {
             try {
                 try { tg.HapticFeedback?.impactOccurred('light'); } catch(e) {}
-                let cleanBotName = String(botUsername).replace('@', '').trim() || "katxlog_bot";
                 let startParam = type === 'movie' ? `open_movie_${rowIndex}` : `open_${rowIndex}`;
-                let botLink = `https://t.me/${cleanBotName}?start=${startParam}`;
+                let botLink = `https://t.me/${botUsername}?start=${startParam}`;
                 let title = document.getElementById('title').textContent;
                 tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent("Смотри: " + title)}`);
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
@@ -491,17 +467,33 @@
 
         function openInBot() {
             try {
-                let cleanBotName = String(botUsername).replace('@', '').trim() || "katxlog_bot";
+                if (!rowIndex) {
+                    tg.openTelegramLink(`https://t.me/${botUsername}`);
+                    setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
+                    return;
+                }
                 let startParam = type === 'movie' ? `play_movie_${rowIndex}` : `play_${rowIndex}`;
-                tg.openTelegramLink(`https://t.me/${cleanBotName}?start=${startParam}`);
+                tg.openTelegramLink(`https://t.me/${botUsername}?start=${startParam}`);
+                setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
             } catch (e) { tg.showAlert("Ошибка: " + e.message); }
+        }
+
+        // 🚀 ФУНКЦИЯ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ"
+        function continueWatching() {
+            if (!progressData) return;
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+            
+            // Отправляем в бота команду play_ (бот сам подтянет последнюю серию)
+            const startParam = `play_${rowIndex}`;
+            tg.openTelegramLink(`https://t.me/${botUsername}?start=${startParam}`);
+            setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
         function openSimilar(id, kind, localRow, title, year) {
             try { tg.HapticFeedback?.selectionChanged(); } catch (e) {}
             if (localRow && localRow > 0) {
                 const newType = kind === 'm' ? 'movie' : 'series';
-                window.location.search = `?rowIndex=${localRow}&type=${newType}`;
+                window.location.search = `?rowIndex=${localRow}&type=${newType}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
             } else {
                 loadTmdbCard(id, kind, title, year);
             }
@@ -526,10 +518,10 @@
             document.getElementById('description').textContent = 'Загрузка описания...';
             document.getElementById('description').style.display = 'block';
             document.getElementById('readMoreBtn').style.display = 'none';
-            document.getElementById('country').textContent = "—";
+            document.getElementById('country').innerHTML = "—";
             document.getElementById('genres').textContent = "—";
             ['director-row', 'cast-row', 'companies-row'].forEach(i => document.getElementById(i).style.display = 'none');
-            ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-section']
+            ['trailer-section', 'backdrops-section', 'seasons-section', 'similar-section', 'providers-container', 'continue-section']
                 .forEach(i => document.getElementById(i).style.display = 'none');
             document.getElementById('trailer-iframe').src = '';
             document.getElementById('action-row').style.display = 'none';
@@ -540,21 +532,35 @@
             bottomBtn.disabled = true;
 
             try {
-                const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
-                const data = JSON.parse(await res.text());
+                let data = null;
+                try { data = await fetchTmdbDirect(id, kind); } 
+                catch (e1) { console.warn("TMDB direct:", e1); }
 
-                if (data.ok && data.inBase) {
-                    window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}`;
+                if (!data) {
+                    const res = await fetch(`${API_URL}?action=tmdb_by_id&id=${encodeURIComponent(id)}&kind=${kind}&_t=${Date.now()}`);
+                    data = JSON.parse(await res.text());
+                    if (data.ok && data.inBase) {
+                        window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
+                        return;
+                    }
+                }
+
+                if (!data || !data.ok) throw new Error((data && data.error) || "Нет данных");
+                if (data.inBase) {
+                    window.location.search = `?rowIndex=${data.rowIndex}&type=${data.type}&bot=${encodeURIComponent(botUsername)}&api=${encodeURIComponent(API_URL)}`;
                     return;
                 }
-                if (!data.ok) throw new Error(data.error || "Нет данных");
 
                 currentTmdb.title = data.title || title;
                 currentTmdb.year = data.year || year;
                 currentTmdb.countryRaw = data.countryRaw || "";
 
                 document.title = currentTmdb.title;
-                document.getElementById('poster').src = data.poster || 'https://via.placeholder.com/500x750?text=No+Poster';
+                
+                const posterEl = document.getElementById('poster');
+                posterEl.style.display = data.poster ? 'block' : 'none';
+                posterEl.src = data.poster || '';
+
                 document.getElementById('title').textContent = currentTmdb.title;
                 document.getElementById('originalTitle').textContent = data.originalTitle || '';
                 document.getElementById('tagline').textContent = data.tagline ? `«${data.tagline}»` : '';
@@ -566,8 +572,9 @@
                 b += `<span class="badge red">❌ Нет в базе</span>`;
                 document.getElementById('badges-container').innerHTML = b;
 
-                document.getElementById('country').textContent = data.country || "—";
+                document.getElementById('country').innerHTML = data.country || "—";
                 document.getElementById('genres').textContent = data.genres || "—";
+                
                 if (data.director) { document.getElementById('director').textContent = data.director; document.getElementById('director-row').style.display = 'flex'; }
                 if (data.cast) { document.getElementById('cast').textContent = data.cast; document.getElementById('cast-row').style.display = 'flex'; }
 
@@ -578,7 +585,7 @@
                     document.getElementById('readMoreBtn').textContent = 'Читать далее';
                     document.getElementById('readMoreBtn').style.display = 'inline-block';
                 } else {
-                    document.getElementById('description').style.display = 'none';
+                    document.getElementById('description').textContent = 'Описание пока отсутствует.';
                 }
 
                 if (data.trailer) {
@@ -594,7 +601,7 @@
                     `<span class="badge">${kind === 'm' ? '🍿 Фильм' : '📺 Сериал'}</span>` +
                     (year ? `<span class="badge">📅 ${year}</span>` : '') +
                     `<span class="badge red">❌ Нет в базе</span>`;
-                document.getElementById('description').textContent = 'Подробности временно недоступны, но вы можете оставить заявку.';
+                document.getElementById('description').textContent = 'Не удалось загрузить данные (' + e.message + '). Вы всё равно можете оставить заявку.';
             }
             showRequestButton();
         }
@@ -602,22 +609,16 @@
         async function requestMovie() {
             const c = currentTmdb;
             if (!c) return;
+            
+            try { tg.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+
             const btn = document.getElementById('main-action-btn');
-            btn.disabled = true;
             btn.innerHTML = '⏳ Подготовка...';
-            try {
-                const q = JSON.stringify({ name: c.title, year: c.year || "", country: c.countryRaw || "" });
-                const res = await fetch(`${API_URL}?action=save_query&q=${encodeURIComponent(q)}&_t=${Date.now()}`);
-                const data = JSON.parse(await res.text());
-                if (!(data.ok && data.id)) throw new Error("Не удалось сохранить запрос");
-                const bot = String(botUsername).replace('@', '').trim() || "katxlog_bot";
-                tg.openTelegramLink(`https://t.me/${bot}?start=${c.kind === 'm' ? 'reqm' : 'reqs'}_${data.id}`);
-                setTimeout(() => { tg.close(); }, 500);
-            } catch (e) {
-                tg.showAlert("Ошибка: " + e.message);
-            } finally {
-                showRequestBtn();
-            }
+
+            // Передаем TMDB ID напрямую (rqm_ID для фильма, rqt_ID для сериала)
+            const prefix = c.kind === 'm' ? 'rqm' : 'rqt';
+            tg.openTelegramLink(`https://t.me/${botUsername}?start=${prefix}_${c.id}`);
+            setTimeout(() => { try { tg.close(); } catch (e) {} }, 400);
         }
 
         function closeApp() { tg.close(); }
