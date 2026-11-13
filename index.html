@@ -227,7 +227,7 @@
         let isMuted = false;
         let botUsername = urlParams.get('bot') || "katxlog_bot";
         let episodesList = []; 
-        let currentTmdb = null; // 🚀 ДЛЯ ФИЛЬМОВ НЕ ИЗ БАЗЫ
+        let currentTmdb = null; // 🚀 ДОБАВЛЕНО ДЛЯ TMDB
 
         async function loadBasic() {
             try {
@@ -564,8 +564,6 @@
         }
 
         function closeApp() { tg.close(); }
-        
-        // Старт
         loadBasic();
     </script>
 </body>
