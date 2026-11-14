@@ -35,33 +35,8 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(120% 6
 .content{padding:46px 18px 0;max-width:640px;margin:0 auto}
 h1{font:800 26px/1.15 Unbounded,sans-serif;text-align:center;letter-spacing:-.5px}
 
-/* 🚀 КРАСИВОЕ АНГЛИЙСКОЕ НАЗВАНИЕ */
-.orig {
-    text-align: center;
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 10px;
-    opacity: 0.9;
-    text-shadow: 0 2px 10px rgba(255,255,255,0.3);
-}
-
-/* 🚀 ЦВЕТНАЯ ЦИТАТА */
-.tag {
-    text-align: center;
-    font-size: 14px;
-    font-style: italic;
-    font-weight: 600;
-    margin-top: 12px;
-    line-height: 1.5;
-    padding: 0 10px;
-    background: linear-gradient(90deg, #ffb347 0%, #ff5d73 50%, #8fd3ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
+.orig{text-align:center;color:#fff;font-size:14px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-top:10px;opacity:.9;text-shadow:0 2px 10px rgba(255,255,255,.3)}
+.tag{text-align:center;font-size:14px;font-style:italic;font-weight:600;margin-top:12px;line-height:1.5;padding:0 10px;background:linear-gradient(90deg,#ffb347 0%,#ff5d73 50%,#8fd3ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
 .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:16px 0}
 .chip{padding:6px 12px;border-radius:99px;background:var(--glass);border:1px solid var(--line);font-size:12.5px;font-weight:600;backdrop-filter:blur(10px)}
@@ -225,6 +200,9 @@ const botUsername = q.get('bot') || "katxlog_bot";
 const userId = tg.initDataUnsafe?.user?.id || q.get('uid') || "0";
 let isInWatchlist = false, isMuted = false, currentTmdb = null, progressData = null;
 let episodesList = [], seasonsData = [], frames = [], frameIdx = 0, sheetOpen = false, sheetView = 'seasons', lbOpen = false;
+
+// 🚀 ПЕРЕМЕННЫЕ ДЛЯ ХРАНЕНИЯ РЕЙТИНГОВ ИЗ ТАБЛИЦЫ
+let tableTMDB = "", tableKP = "";
 
 const hap = (k,v) => { try { tg.HapticFeedback?.[k](v); } catch(e){} };
 
@@ -415,7 +393,11 @@ async function loadBasic() {
     document.title = data.title;
     setPoster(data.poster || 'https://via.placeholder.com/500x750?text=No+Poster');
     $('title').textContent = data.title;
-    setRings(data.ratingTMDB, data.ratingKP);
+    
+    // 🚀 СОХРАНЯЕМ РЕЙТИНГИ ИЗ ТАБЛИЦЫ, ЧТОБЫ НЕ ПОТЕРЯТЬ ИХ ПРИ ЗАГРУЗКЕ API
+    tableTMDB = data.ratingTMDB;
+    tableKP = data.ratingKP;
+    setRings(tableTMDB, tableKP);
     
     $('chips').innerHTML = chip(type === 'movie' ? '🍿 Фильм' : '📺 Сериал') + (data.year ? chip('📅 ' + data.year) : '');
     
@@ -444,18 +426,22 @@ async function loadExtended() {
     const d = await (await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`)).json();
     if (!d.ok) return;
 
+    // 🚀 ОБНОВЛЯЕМ КОЛЬЦА РЕЙТИНГА (ЕСЛИ API ДАЛ - БЕРЕМ ЕГО, ЕСЛИ НЕТ - ТОТ, ЧТО В ТАБЛИЦЕ)
+    let finalTMDB = d.ratingTMDB || tableTMDB;
+    let finalKP = d.ratingKP || tableKP;
+    setRings(finalTMDB, finalKP);
+
     if (d.originalTitle) $('originalTitle').textContent = d.originalTitle;
     if (d.tagline) $('tagline').textContent = `«${d.tagline}»`;
 
     let c = '';
     if (d.status) c += chip('🚦 ' + (d.status === "Ended" ? "Завершён" : d.status === "Returning Series" ? "Идёт показ" : d.status));
     
-    // 🚀 ВЫВОДИМ ВРЕМЯ СЕРИИ / ФИЛЬМА
     if (d.runtime > 0) { 
         const h = Math.floor(d.runtime / 60), m = d.runtime % 60; 
         c += chip('⏱ ' + (h > 0 ? `${h} ч ${m} мин` : `${m} мин`)); 
     } else if (type === 'series') {
-        c += chip('⏱ ~45 мин'); // Фолбэк для сериалов, если TMDB не отдал время
+        c += chip('⏱ ~45 мин'); 
     }
 
     if (d.ageRating) c += chip(d.ageRating, 'hot');
