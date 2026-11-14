@@ -58,13 +58,17 @@ h3{font:800 16px Unbounded,sans-serif;margin:24px 0 12px}
 .desc{font-size:15px;line-height:1.6;color:#ddd8ee}
 .desc.collapsed{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .more{color:var(--ice);font-weight:700;font-size:14px;margin-top:6px;display:inline-block}
-.hs{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px 18px 18px;margin:0 -18px;perspective:800px}
-.hs::-webkit-scrollbar{display:none}
-.hs img.bd{height:150px;border-radius:14px;scroll-snap-align:center;transform:rotateY(-6deg);box-shadow:0 14px 26px -8px #000;cursor:pointer;transition:transform .2s}
+
+/* 🚀 КАРУСЕЛЬ С ПОДДЕРЖКОЙ МЫШИ */
+.hs{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px 18px 18px;margin:0 -18px;perspective:800px;cursor:grab;}
+.hs:active{cursor:grabbing;}
+.hs::-webkit-scrollbar{display:none;}
+
+.hs img.bd{height:150px;border-radius:14px;scroll-snap-align:center;transform:rotateY(-6deg);box-shadow:0 14px 26px -8px #000;cursor:pointer;transition:transform .2s;user-select:none;pointer-events:none;}
 .hs img.bd:active{transform:rotateY(0) scale(.96)}
-.sim{width:112px;flex-shrink:0;scroll-snap-align:start;transform:rotateY(-8deg);transform-origin:left;transition:transform .25s}
+.sim{width:112px;flex-shrink:0;scroll-snap-align:start;transform:rotateY(-8deg);transform-origin:left;transition:transform .25s;user-select:none;}
 .sim:active{transform:rotateY(0) scale(.96)}
-.sim img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:14px;box-shadow:0 14px 26px -8px #000;background:var(--plum)}
+.sim img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:14px;box-shadow:0 14px 26px -8px #000;background:var(--plum);pointer-events:none;}
 .sim p{font-size:12px;font-weight:700;margin-top:7px;line-height:1.25}
 .sim small{color:var(--hint);font-size:11px}
 .seasons{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
@@ -200,11 +204,62 @@ const botUsername = q.get('bot') || "katxlog_bot";
 const userId = tg.initDataUnsafe?.user?.id || q.get('uid') || "0";
 let isInWatchlist = false, isMuted = false, currentTmdb = null, progressData = null;
 let episodesList = [], seasonsData = [], frames = [], frameIdx = 0, sheetOpen = false, sheetView = 'seasons', lbOpen = false;
-
-// 🚀 ПЕРЕМЕННЫЕ ДЛЯ ХРАНЕНИЯ РЕЙТИНГОВ ИЗ ТАБЛИЦЫ
 let tableTMDB = "", tableKP = "";
 
 const hap = (k,v) => { try { tg.HapticFeedback?.[k](v); } catch(e){} };
+
+// 🚀 DRAG-TO-SCROLL ДЛЯ ПК (КАРУСЕЛИ)
+function initDragScroll() {
+    document.querySelectorAll('.hs').forEach(slider => {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let isDragging = false;
+
+        slider.addEventListener('mousedown', (e) => {
+            isDown = true;
+            isDragging = false;
+            slider.style.cursor = 'grabbing';
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+        
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        });
+        
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        });
+        
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // Скорость прокрутки
+            if (Math.abs(walk) > 5) isDragging = true;
+            slider.scrollLeft = scrollLeft - walk;
+        });
+
+        // Чтобы при клике после перетаскивания не открывалась картинка
+        slider.addEventListener('click', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+        
+        // Поддержка колесика мыши (горизонтальный скролл)
+        slider.addEventListener('wheel', (evt) => {
+            if (evt.deltaY !== 0) {
+                evt.preventDefault();
+                slider.scrollLeft += evt.deltaY;
+            }
+        });
+    });
+}
 
 const card = $('card'); let touching = false, t0 = performance.now();
 function tilt(x, y) {
@@ -394,7 +449,6 @@ async function loadBasic() {
     setPoster(data.poster || 'https://via.placeholder.com/500x750?text=No+Poster');
     $('title').textContent = data.title;
     
-    // 🚀 СОХРАНЯЕМ РЕЙТИНГИ ИЗ ТАБЛИЦЫ, ЧТОБЫ НЕ ПОТЕРЯТЬ ИХ ПРИ ЗАГРУЗКЕ API
     tableTMDB = data.ratingTMDB;
     tableKP = data.ratingKP;
     setRings(tableTMDB, tableKP);
@@ -426,7 +480,6 @@ async function loadExtended() {
     const d = await (await fetch(`${API_URL}?action=tmdb&rowIndex=${rowIndex}&type=${type}&_t=${Date.now()}`)).json();
     if (!d.ok) return;
 
-    // 🚀 ОБНОВЛЯЕМ КОЛЬЦА РЕЙТИНГА (ЕСЛИ API ДАЛ - БЕРЕМ ЕГО, ЕСЛИ НЕТ - ТОТ, ЧТО В ТАБЛИЦЕ)
     let finalTMDB = d.ratingTMDB || tableTMDB;
     let finalKP = d.ratingKP || tableKP;
     setRings(finalTMDB, finalKP);
@@ -445,7 +498,6 @@ async function loadExtended() {
     }
 
     if (d.ageRating) c += chip(d.ageRating, 'hot');
-    
     if (d.ratingMpaa) c += chip(d.ratingMpaa, 'hot');
     let budgetVal = d.budgetKP || d.budget || 0;
     if (budgetVal > 0) c += chip('💰 $' + (budgetVal / 1000000).toFixed(1) + ' млн');
@@ -487,6 +539,8 @@ async function loadExtended() {
         openSimilar(m.id, m.kind, m.rowIndex || 0, m.title, m.year || '');
       };
     }
+    // 🚀 ИНИЦИАЛИЗИРУЕМ DRAG-TO-SCROLL ПОСЛЕ ЗАГРУЗКИ КАРУСЕЛЕЙ
+    initDragScroll();
   } catch (e) { console.error("loadExtended:", e); }
 }
 
