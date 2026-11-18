@@ -64,11 +64,10 @@ h3{font:800 16px Unbounded,sans-serif;margin:24px 0 12px}
 .hs:active{cursor:grabbing;}
 .hs::-webkit-scrollbar{display:none;}
 
-.hs img.bd{height:150px;border-radius:14px;scroll-snap-align:center;transform:rotateY(-6deg);box-shadow:0 14px 26px -8px #000;cursor:pointer;transition:transform .2s;user-select:none;pointer-events:none;}
-.hs img.bd:active{transform:rotateY(0) scale(.96)}
-.sim{width:112px;flex-shrink:0;scroll-snap-align:start;transform:rotateY(-8deg);transform-origin:left;transition:transform .25s;user-select:none;}
+.hs img.bd{height:150px;border-radius:14px;scroll-snap-align:center;transform:rotateY(-6deg);box-shadow:0 14px 26px -8px #000;cursor:pointer;transition:transform .2s;user-select:none;-webkit-user-drag:none;}
+.sim{width:112px;flex-shrink:0;scroll-snap-align:start;transform:rotateY(-8deg);transform-origin:left;transition:transform .25s;user-select:none;cursor:pointer;}
 .sim:active{transform:rotateY(0) scale(.96)}
-.sim img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:14px;box-shadow:0 14px 26px -8px #000;background:var(--plum);pointer-events:none;}
+.sim img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:14px;box-shadow:0 14px 26px -8px #000;background:var(--plum);user-select:none;-webkit-user-drag:none;}
 .sim p{font-size:12px;font-weight:700;margin-top:7px;line-height:1.25}
 .sim small{color:var(--hint);font-size:11px}
 .seasons{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
@@ -127,7 +126,7 @@ h3{font:800 16px Unbounded,sans-serif;margin:24px 0 12px}
 <div id="app">
   <div class="stage">
     <div class="card3d" id="card">
-      <img id="poster" alt="Постер">
+      <img id="poster" alt="Постер" draggable="false">
       <div class="glare"></div>
       <div class="rings" id="rings"></div>
     </div>
@@ -175,7 +174,7 @@ h3{font:800 16px Unbounded,sans-serif;margin:24px 0 12px}
 <div id="lb">
   <button class="lb-x" onclick="closeLightbox()" aria-label="Закрыть">✕</button>
   <button class="lb-nav l" onclick="lbStep(-1,event)" aria-label="Назад">‹</button>
-  <img id="lbImg" alt="">
+  <img id="lbImg" alt="" draggable="false">
   <button class="lb-nav r" onclick="lbStep(1,event)" aria-label="Вперёд">›</button>
   <div class="lb-count" id="lbCount"></div>
 </div>
@@ -440,6 +439,31 @@ function playEpisode(absoluteIdx) {
   setTimeout(() => goBot(`play_ep_${rowIndex}_${absoluteIdx}_1080p`), 300);
 }
 
+// 🚀 ДОБАВЛЕНА ФУНКЦИЯ ЗАГРУЗКИ ИЗ TMDB (БЕЗ НЕЁ КАРТОЧКИ НЕ ОТКРЫВАЛИСЬ)
+async function fetchTmdbDirect(id, kind) {
+  const k = kind === 'm' ? 'movie' : 'tv';
+  const base = `https://api.themoviedb.org/3/${k}/${id}?api_key=ca153f9966020e101edec817d9a01699`;
+  const t = await (await fetch(base + "&language=ru-RU&append_to_response=videos,credits&include_video_language=ru,en,null")).json();
+  if (!t || !t.id) throw new Error(t && t.status_message ? t.status_message : "TMDB: нет данных");
+  let description = t.overview || "";
+  if (!description) { try { description = (await (await fetch(base + "&language=en-US")).json()).overview || ""; } catch(e){} }
+  let iso = (t.production_countries || []).map(c => c.iso_3166_1);
+  if (!iso.length) iso = t.origin_country || [];
+  const vid = ((t.videos && t.videos.results) || []).find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"));
+  const crew = (t.credits && t.credits.crew) || [];
+  return {
+    ok: true, title: t.title || t.name || "", originalTitle: t.original_title || t.original_name || "", tagline: t.tagline || "",
+    year: (t.release_date || t.first_air_date || "").substring(0, 4),
+    poster: t.poster_path ? "https://image.tmdb.org/t/p/w500" + t.poster_path : "",
+    country: iso.map(i => String(i).toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0))) + " " + i).join(", "), countryRaw: iso.join(", "),
+    genres: (t.genres || []).map(g => g.name).join(", "), description,
+    trailer: vid ? "https://www.youtube.com/watch?v=" + vid.key : "",
+    ratingTMDB: t.vote_average ? String(Math.round(t.vote_average * 10) / 10) : "", ratingKP: "",
+    cast: ((t.credits && t.credits.cast) || []).slice(0, 10).map(c => c.name).join(", "),
+    director: k === 'movie' ? ((crew.find(c => c.job === "Director") || {}).name || "") : (t.created_by || []).map(c => c.name).join(", ")
+  };
+}
+
 async function loadBasic() {
   try {
     const data = await (await fetch(`${API_URL}?action=basic&rowIndex=${rowIndex}&type=${type}&userId=${userId}&_t=${Date.now()}`)).json();
@@ -516,12 +540,15 @@ async function loadExtended() {
       $('providers-container').style.display = 'block';
       $('providers').innerHTML = d.watchProviders.map(p => `<img src="${esc(p.logo)}" title="${esc(p.name)}" alt="${esc(p.name)}">`).join('');
     }
+    
+    // 🚀 ДОБАВЛЕН draggable="false" ДЛЯ КАРТИНОК
     if (d.backdrops && d.backdrops.length) {
       frames = d.backdrops;
       $('backdrops-section').style.display = 'block';
-      $('backdrops').innerHTML = frames.map((b, i) => `<img class="bd" data-i="${i}" src="${esc(b)}" alt="Кадр ${i + 1}" loading="lazy">`).join('');
+      $('backdrops').innerHTML = frames.map((b, i) => `<img class="bd" data-i="${i}" src="${esc(b)}" alt="Кадр ${i + 1}" loading="lazy" draggable="false">`).join('');
       $('backdrops').onclick = ev => { const el = ev.target.closest('.bd'); if (el) openLightbox(+el.dataset.i); };
     }
+    
     if (type === 'series') {
       seasonsData = buildSeasons(d.seasons);
       if (seasonsData.length) {
@@ -530,9 +557,11 @@ async function loadExtended() {
         $('seasons').onclick = ev => { const el = ev.target.closest('.season'); if (el) openSeasonFromPage(+el.dataset.s); };
       }
     }
+    
+    // 🚀 ДОБАВЛЕН draggable="false" ДЛЯ КАРТИНОК
     if (d.similar && d.similar.length) {
       $('similar-section').style.display = 'block';
-      $('similar').innerHTML = d.similar.map((m, i) => `<div class="sim" data-i="${i}"><img src="${esc(m.poster)}" alt=""><p>${esc(m.title)}</p><small>${esc(m.year)}</small></div>`).join('');
+      $('similar').innerHTML = d.similar.map((m, i) => `<div class="sim" data-i="${i}"><img src="${esc(m.poster)}" alt="" draggable="false"><p>${esc(m.title)}</p><small>${esc(m.year)}</small></div>`).join('');
       $('similar').onclick = ev => {
         const el = ev.target.closest('.sim'); if (!el) return;
         const m = d.similar[+el.dataset.i];
